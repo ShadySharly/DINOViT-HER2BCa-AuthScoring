@@ -20,6 +20,7 @@ import math
 import json
 from pathlib import Path
 
+import openslide
 import numpy as np
 from PIL import Image
 import torch
@@ -31,9 +32,10 @@ from torchvision import datasets, transforms
 from torchvision import models as torchvision_models
 
 import utils
-import part_utils
 import vision_transformer as vits
+import wsi_processing 
 from vision_transformer import DINOHead
+
 
 torchvision_archs = sorted(name for name in torchvision_models.__dict__
     if name.islower() and not name.startswith("__")
@@ -466,7 +468,11 @@ class DataAugmentationDINO(object):
 
 
 if __name__ == '__main__':
-    part_utils.create_partiton_folder('1')
+    print("HOLA\n")
+    wsi_file = os.path.join(slide.SRC_TRAIN_DIR, "TCGA-AN-A0FN-01Z-00-DX1.CAA3C2D0-7E74-48E5-ACB7-487434C7AAD2.svs")
+    isFile = os.path.isfile(wsi_file)
+    print(isFile)
+    slide = openslide.open_slide(wsi_file)
     #parser = argparse.ArgumentParser('DINO', parents=[get_args_parser()])
     #args = parser.parse_args()
     #print(args)

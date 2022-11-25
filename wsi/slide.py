@@ -29,9 +29,10 @@ import sys
 import util
 from util import Time
 
-BASE_DIR = os.path.join(".", "data/")
+ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '../..'))
+BASE_DIR = os.path.join(ROOT_DIR, "data")
 # BASE_DIR = os.path.join(os.sep, "Volumes", "BigData", "TUPAC")
-TRAIN_PREFIX = "TUPAC-TR-"
+TRAIN_PREFIX = "TCGA-"
 SRC_TRAIN_DIR = os.path.join(BASE_DIR, "GDC_TCGA", "wsi")
 
 SRC_TRAIN_EXT = "svs"
@@ -680,7 +681,8 @@ def slide_to_scaled_pil_image(slide_number):
     Tuple consisting of scaled-down PIL image, original width, original height, new width, and new height.
   """
   slide_filepath = get_training_slide_path(slide_number)
-  print("Opening Slide #%d: %s" % (slide_number, slide_filepath))
+  #print("Opening Slide #%d: %s" % (slide_number, slide_filepath))
+  print("Opening Slide #%s: %s" % (slide_number, slide_filepath))
   slide = open_slide(slide_filepath)
 
   large_w, large_h = slide.dimensions
@@ -1016,15 +1018,20 @@ def slide_info(display_all_properties=False):
 
 
 if __name__ == "__main__":
-  ROOT_DIR = os.path.abspath(os.curdir)
-  print(ROOT_DIR)
-  isExist = os.path.exists(ROOT_DIR)
+
+  print(SRC_TRAIN_DIR)
+  isExist = os.path.exists(SRC_TRAIN_DIR)
   print(isExist)
-  #slide = open_slide(src_svs)
-  #slide.training_slide_to_image(4)
-  #img_path = slide.get_training_image_path(4)
-  #img = slide.open_image(img_path)
-  #img.show()
+  wsi_file = os.path.join(SRC_TRAIN_DIR, "TCGA-AN-A0FN-01Z-00-DX1.CAA3C2D0-7E74-48E5-ACB7-487434C7AAD2.svs")
+  slide_number = "AN-A0FN-01Z-00-DX1.CAA3C2D0-7E74-48E5-ACB7-487434C7AAD2"
+  isFile = os.path.isfile(wsi_file)
+  print(isFile)
+
+  slide = open_slide(wsi_file)
+  slide_path = get_training_slide_path(slide_number)
+  training_slide_to_image(slide_number)
+  #show_slide(slide_number)
+  #print(slide_path)
   
   # show_slide(2)
   # slide_info(display_all_properties=True)
