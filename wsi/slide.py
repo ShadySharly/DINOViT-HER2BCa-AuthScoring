@@ -29,17 +29,19 @@ import sys
 import util
 from util import Time
 
-ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '../..'))
+ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
 BASE_DIR = os.path.join(ROOT_DIR, "data")
 # BASE_DIR = os.path.join(os.sep, "Volumes", "BigData", "TUPAC")
 TRAIN_PREFIX = "TCGA-"
 SRC_TRAIN_DIR = os.path.join(BASE_DIR, "GDC_TCGA", "wsi")
+GDC_TCGA_WSI_DIR = os.path.join(BASE_DIR, "GDC_TCGA", "wsi")
+
 
 SRC_TRAIN_EXT = "svs"
 DEST_TRAIN_SUFFIX = ""  # Example: "train-"
 DEST_TRAIN_EXT = "jpg"
 SCALE_FACTOR = 20
-DEST_TRAIN_DIR = os.path.join(BASE_DIR, "GDC_TCGA", "training", "training_" + DEST_TRAIN_EXT)
+DEST_TRAIN_DIR = os.path.join(BASE_DIR, "GDC_TCGA", "training")
 THUMBNAIL_SIZE = 300
 THUMBNAIL_EXT = "jpg"
 
@@ -206,6 +208,7 @@ def get_training_image_path(slide_number, large_w=None, large_h=None, small_w=No
   padded_sl_num = str(slide_number).zfill(3)
   if large_w is None and large_h is None and small_w is None and small_h is None:
     wildcard_path = os.path.join(DEST_TRAIN_DIR, TRAIN_PREFIX + padded_sl_num + "*." + DEST_TRAIN_EXT)
+    print(wildcard_path)
     img_path = glob.glob(wildcard_path)[0]
   else:
     img_path = os.path.join(DEST_TRAIN_DIR, TRAIN_PREFIX + padded_sl_num + "-" + str(
@@ -748,7 +751,7 @@ def get_num_training_slides():
   Returns:
     The total number of WSI training slide images.
   """
-  num_training_slides = len(glob.glob1(SRC_TRAIN_DIR, "*." + SRC_TRAIN_EXT))
+  num_training_slides = len(glob.glob1(DEST_TRAIN_DIR, "*." + DEST_TRAIN_EXT))
   return num_training_slides
 
 
@@ -1023,13 +1026,14 @@ if __name__ == "__main__":
   isExist = os.path.exists(SRC_TRAIN_DIR)
   print(isExist)
   wsi_file = os.path.join(SRC_TRAIN_DIR, "TCGA-AN-A0FN-01Z-00-DX1.CAA3C2D0-7E74-48E5-ACB7-487434C7AAD2.svs")
-  slide_number = "AN-A0FN-01Z-00-DX1.CAA3C2D0-7E74-48E5-ACB7-487434C7AAD2"
+  #slide_number = "AN-A0FN-01Z-00-DX1.CAA3C2D0-7E74-48E5-ACB7-487434C7AAD2"
   isFile = os.path.isfile(wsi_file)
   print(isFile)
-
+  slide_number = "AO-A0JB-01Z-00-DX1.250FE098-345B-4981-9236-0519E1C9058E"
   slide = open_slide(wsi_file)
   slide_path = get_training_slide_path(slide_number)
   training_slide_to_image(slide_number)
+
   #show_slide(slide_number)
   #print(slide_path)
   

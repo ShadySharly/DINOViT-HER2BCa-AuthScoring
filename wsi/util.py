@@ -14,12 +14,29 @@
 #
 # ------------------------------------------------------------------------
 
+import os
 import datetime
 import numpy as np
+import pandas as pd
+from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 # If True, display additional NumPy array stats (min, max, mean, is_binary).
 ADDITIONAL_NP_STATS = False
+
+# GENERAL PATHS
+ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
+DATA_DIR = os.path.join(ROOT_DIR, "data")
+
+# GDC_TCGA PATHS
+GDC_TCGA_DATA_DIR = os.path.join(DATA_DIR, "GDC_TCGA")
+GDC_TCGA_EVAL_DIR = os.path.join(GDC_TCGA_DATA_DIR, "evaluation")
+GDC_TCGA_TRAIN_DIR = os.path.join(GDC_TCGA_DATA_DIR, "training")
+GDC_TCGA_MANIFEST_DIR = os.path.join(GDC_TCGA_DATA_DIR, "manifest")
+GDC_TCGA_WSI_DIR = os.path.join(GDC_TCGA_DATA_DIR, "wsi")
+
+# UCH_CPDAI PATHS
+UCH_CPDAI_DATA_DIR = os.path.join(DATA_DIR, "UCH_CPDAI")
 
 
 def pil_to_np_rgb(pil_img):
@@ -146,3 +163,87 @@ class Time:
     self.end = datetime.datetime.now()
     time_elapsed = self.end - self.start
     return time_elapsed
+
+def txt_to_csv(file_path, dest_path):
+
+  if(os.path.exists(file_path)):
+
+    if(os.path.exists(dest_path)):
+      file_name = Path(file_path).stem
+      txt_file = pd.read_csv(file_path, delimiter="\t")
+      return txt_file.to_csv(dest_path + "/" + file_name + ".csv", index=None)
+
+    print("No dest_path exists")
+    return False
+
+  print("No file_path exists")
+  return False
+
+
+def filter_manifest():
+  brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Data.csv", delimiter=";")
+  manifest_file = open(GDC_TCGA_MANIFEST_DIR + "/gdc_manifest_3111.txt", "r")
+  filtered_manifest_file = open(GDC_TCGA_MANIFEST_DIR + "/gdc_manifest_general.txt", "w")
+  patient_barcodes = brca_file['patient_barcode'].tolist()
+  filtered_manifest_file.write(manifest_file.readline())
+  manifest_list = manifest_file.readlines()
+
+  manifest_list = list(filter(lambda manifest_line : 
+    list(filter(lambda patient : patient + '-01Z-00-DX1' in manifest_line, patient_barcodes)),
+  manifest_list))
+
+  list(map(lambda manifest_line : filtered_manifest_file.write(manifest_line), manifest_list))
+
+  filtered_manifest_file.close()
+
+def rename_wsi_dataset():
+  wsi_name_list = os.listdir(GDC_TCGA_WSI_DIR)
+  list(map(lambda wsi_name : rename_wsi(wsi_name), wsi_name_list))
+
+def rename_wsi(wsi_name):
+  brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Data.csv", delimiter=";")
+  patient_id = extract_patient_barcode(wsi_name)
+  patient_row = brca_file.loc[brca_file['patient_barcode'] == patient_id]
+  patient_id = patient_row.iloc[0]['patient_id']
+
+  src_name = GDC_TCGA_WSI_DIR + "/" + wsi_name
+  dest_name = GDC_TCGA_WSI_DIR + "/" + patient_id + ".svs"
+
+  os.rename(src_name, dest_name)
+
+def extract_patient_barcode(file_name):
+  name_split = file_name.split("-")
+  patient_barcode = name_split[0] + "-" + name_split[1] + "-" + name_split[2]
+  return patient_barcode
+
+def partition_manifest(max_slides):
+  manifest_file = open(GDC_TCGA_MANIFEST_DIR + "/gdc_manifest_general.txt", "r")
+
+  manifest_header = manifest_file.readline()
+  manifest_patients = manifest_file.readlines()
+
+  while
+  
+
+
+
+def create_manifest_partition(header, file, max_slides, part_id, start_index, end_index):
+  partition_name = "gdc_manifest_" + max_slides + "_" + part_id + ".txt"
+  partition_file = open(partition_name, "w")
+  partition_file.write(header)
+
+
+
+  
+if __name__ == "__main__":
+
+  #manifest_csv = txt_to_csv(GDC_TCGA_MANIFEST_DIR + "/gdc_manifest_3111.txt", GDC_TCGA_MANIFEST_DIR)
+  #csv_to_txt(GDC_TCGA_MANIFEST_DIR + "/gdc_manifest_3111.csv", GDC_TCGA_MANIFEST_DIR)
+  #filter_manifest()
+  #rename_dataset()
+  #rename_wsi()
+  #rename_wsi_dataset()
+  My_list = [*range(100, 1057, 100)] + [1057]
+  print(My_list)
+  partition_manifest(100)
+

@@ -27,10 +27,10 @@ import numpy as np
 import os
 from PIL import Image, ImageDraw, ImageFont
 from enum import Enum
-from deephistopath.wsi import util
-from deephistopath.wsi import filter
-from deephistopath.wsi import slide
-from deephistopath.wsi.util import Time
+import util
+import filter
+import slide
+from util import Time
 
 TISSUE_HIGH_THRESH = 80
 TISSUE_LOW_THRESH = 10
@@ -828,10 +828,13 @@ def singleprocess_filtered_images_to_tiles(display=False, save_summary=True, sav
   print("Generating tile summaries\n")
 
   if image_num_list is not None:
+    print("WEA1")
     image_num_list, tile_summaries_dict = image_list_to_tiles(image_num_list, display, save_summary, save_data,
                                                               save_top_tiles)
   else:
+    print("WEA2\n")
     num_training_slides = slide.get_num_training_slides()
+    print(num_training_slides)
     image_num_list, tile_summaries_dict = image_range_to_tiles(1, num_training_slides, display, save_summary, save_data,
                                                                save_top_tiles)
 
@@ -1951,9 +1954,10 @@ def dynamic_tile(slide_num, row, col, small_tile_in_tile=False):
   tile = tile_summary.get_tile(row, col)
   return tile
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
   # tile = dynamic_tile(2, 29, 16, True)
   # tile.display_with_histograms()
-
-  # singleprocess_filtered_images_to_tiles()
+  slide_number = "AN-A0FN-01Z-00-DX1.CAA3C2D0-7E74-48E5-ACB7-487434C7AAD2"
+  slide_list = [slide_number]
+  singleprocess_filtered_images_to_tiles()
   # multiprocess_filtered_images_to_tiles()
