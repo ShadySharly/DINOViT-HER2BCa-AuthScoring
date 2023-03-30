@@ -14,6 +14,7 @@
 #
 # ------------------------------------------------------------------------
 
+import shutil
 import glob
 import math
 import matplotlib.pyplot as plt
@@ -29,37 +30,45 @@ import sys
 import util
 from util import Time
 
+# GLOBAL VARIABLES AND PATHS
+DATA = "data"
 ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
-BASE_DIR = os.path.join(ROOT_DIR, "data")
-# BASE_DIR = os.path.join(os.sep, "Volumes", "BigData", "TUPAC")
-TRAIN_PREFIX = "TCGA-"
-SRC_TRAIN_DIR = os.path.join(BASE_DIR, "GDC_TCGA", "wsi")
-GDC_TCGA_WSI_DIR = os.path.join(BASE_DIR, "GDC_TCGA", "wsi")
+BASE_DIR = os.path.join(ROOT_DIR, DATA)
 
+# SUBDIR VARIABLES AND PATHS
+IMAGE = "image"
+SLIDE = "slide"
+THUMBNAIL = "THUMBNAIL"
+GDC_TCGA = "GDC_TCGA"
+UCH_CPDAI = "UCH_CPDAI"
+SVS = "svs"
+JPG = "jpg"
+PNG = "png"
+TXT = "txt"
+CSV = "csv"
 
-SRC_TRAIN_EXT = "svs"
-DEST_TRAIN_SUFFIX = ""  # Example: "train-"
-DEST_TRAIN_EXT = "jpg"
+IMAGE_EXT = JPG
+SLIDE_PREFIX = "TCGA-"
+SLIDE_DIR = os.path.join(BASE_DIR, GDC_TCGA, SLIDE)
 SCALE_FACTOR = 20
-DEST_TRAIN_DIR = os.path.join(BASE_DIR, "GDC_TCGA", "training")
 THUMBNAIL_SIZE = 300
-THUMBNAIL_EXT = "jpg"
-
-DEST_TRAIN_THUMBNAIL_DIR = os.path.join(BASE_DIR, "training_thumbnail_" + THUMBNAIL_EXT)
+GDC_TCGA_IMAGE_DIR = os.path.join(BASE_DIR, GDC_TCGA, IMAGE)
+UCH_CPDAI_IMAGE_DIR = os.path.join(BASE_DIR, UCH_CPDAI, IMAGE)
+GDC_TCGA_THUMBNAIL_DIR = os.path.join(BASE_DIR, GDC_TCGA, THUMBNAIL)
 
 FILTER_SUFFIX = ""  # Example: "filter-"
 FILTER_RESULT_TEXT = "filtered"
-FILTER_DIR = os.path.join(BASE_DIR, "filter_" + DEST_TRAIN_EXT)
-FILTER_THUMBNAIL_DIR = os.path.join(BASE_DIR, "filter_thumbnail_" + THUMBNAIL_EXT)
+FILTER_DIR = os.path.join(BASE_DIR, "filter_" + JPG)
+FILTER_THUMBNAIL_DIR = os.path.join(BASE_DIR, "filter_thumbnail_" + JPG)
 FILTER_PAGINATION_SIZE = 50
 FILTER_PAGINATE = True
 FILTER_HTML_DIR = BASE_DIR
 
-TILE_SUMMARY_DIR = os.path.join(BASE_DIR, "tile_summary_" + DEST_TRAIN_EXT)
-TILE_SUMMARY_ON_ORIGINAL_DIR = os.path.join(BASE_DIR, "tile_summary_on_original_" + DEST_TRAIN_EXT)
+TILE_SUMMARY_DIR = os.path.join(BASE_DIR, "tile_summary_" + JPG)
+TILE_SUMMARY_ON_ORIGINAL_DIR = os.path.join(BASE_DIR, "tile_summary_on_original_" + JPG)
 TILE_SUMMARY_SUFFIX = "tile_summary"
-TILE_SUMMARY_THUMBNAIL_DIR = os.path.join(BASE_DIR, "tile_summary_thumbnail_" + THUMBNAIL_EXT)
-TILE_SUMMARY_ON_ORIGINAL_THUMBNAIL_DIR = os.path.join(BASE_DIR, "tile_summary_on_original_thumbnail_" + THUMBNAIL_EXT)
+TILE_SUMMARY_THUMBNAIL_DIR = os.path.join(BASE_DIR, "tile_summary_thumbnail_" + JPG)
+TILE_SUMMARY_ON_ORIGINAL_THUMBNAIL_DIR = os.path.join(BASE_DIR, "tile_summary_on_original_thumbnail_" + JPG)
 TILE_SUMMARY_PAGINATION_SIZE = 50
 TILE_SUMMARY_PAGINATE = True
 TILE_SUMMARY_HTML_DIR = BASE_DIR
@@ -68,13 +77,13 @@ TILE_DATA_DIR = os.path.join(BASE_DIR, "tile_data")
 TILE_DATA_SUFFIX = "tile_data"
 
 TOP_TILES_SUFFIX = "top_tile_summary"
-TOP_TILES_DIR = os.path.join(BASE_DIR, TOP_TILES_SUFFIX + "_" + DEST_TRAIN_EXT)
-TOP_TILES_THUMBNAIL_DIR = os.path.join(BASE_DIR, TOP_TILES_SUFFIX + "_thumbnail_" + THUMBNAIL_EXT)
-TOP_TILES_ON_ORIGINAL_DIR = os.path.join(BASE_DIR, TOP_TILES_SUFFIX + "_on_original_" + DEST_TRAIN_EXT)
+TOP_TILES_DIR = os.path.join(BASE_DIR, TOP_TILES_SUFFIX + "_" + JPG)
+TOP_TILES_THUMBNAIL_DIR = os.path.join(BASE_DIR, TOP_TILES_SUFFIX + "_thumbnail_" + JPG)
+TOP_TILES_ON_ORIGINAL_DIR = os.path.join(BASE_DIR, TOP_TILES_SUFFIX + "_on_original_" + JPG)
 TOP_TILES_ON_ORIGINAL_THUMBNAIL_DIR = os.path.join(BASE_DIR,
-                                                   TOP_TILES_SUFFIX + "_on_original_thumbnail_" + THUMBNAIL_EXT)
+                                                   TOP_TILES_SUFFIX + "_on_original_thumbnail_" + JPG)
 
-TILE_DIR = os.path.join(BASE_DIR, "tiles_" + DEST_TRAIN_EXT)
+TILE_DIR = os.path.join(BASE_DIR, "tiles_" + JPG)
 TILE_SUFFIX = "tile"
 
 STATS_DIR = os.path.join(BASE_DIR, "svs_stats")
@@ -93,10 +102,8 @@ def open_slide(filename):
   try:
     slide = openslide.open_slide(filename)
   except OpenSlideError:
-    print("WEA1")
     slide = None
   except FileNotFoundError:
-    print("WEA2")
     slide = None
   return slide
 
@@ -111,6 +118,7 @@ def open_image(filename):
   returns:
     A PIL.Image.Image object representing an image.
   """
+  print("File Name: " + filename)
   image = Image.open(filename)
   return image
 
@@ -143,10 +151,15 @@ def get_training_slide_path(slide_number):
   Returns:
     Path to the WSI training slide file.
   """
-  padded_sl_num = str(slide_number).zfill(3)
-  slide_filepath = os.path.join(SRC_TRAIN_DIR, TRAIN_PREFIX + padded_sl_num + "." + SRC_TRAIN_EXT)
-  return slide_filepath
+  padded_sl_num = str(slide_number).zfill(4)
+  slide_filepath = os.path.join(SLIDE_DIR, SLIDE_PREFIX + padded_sl_num + "." + SVS)
 
+  if(os.path.isfile(slide_filepath)):
+    return slide_filepath
+  
+  else:
+    print("No existing slide N°: " + str(slide_number))
+    return False
 
 def get_tile_image_path(tile):
   """
@@ -160,10 +173,10 @@ def get_tile_image_path(tile):
     Path to image tile.
   """
   t = tile
-  padded_sl_num = str(t.slide_num).zfill(3)
+  padded_sl_num = str(t.slide_num).zfill(4)
   tile_path = os.path.join(TILE_DIR, padded_sl_num,
-                           TRAIN_PREFIX + padded_sl_num + "-" + TILE_SUFFIX + "-r%d-c%d-x%d-y%d-w%d-h%d" % (
-                             t.r, t.c, t.o_c_s, t.o_r_s, t.o_c_e - t.o_c_s, t.o_r_e - t.o_r_s) + "." + DEST_TRAIN_EXT)
+                           SLIDE_PREFIX + padded_sl_num + "-" + TILE_SUFFIX + "-r%d-c%d-x%d-y%d-w%d-h%d" % (
+                             t.r, t.c, t.o_c_s, t.o_r_s, t.o_c_e - t.o_c_s, t.o_r_e - t.o_r_s) + "." + JPG)
   return tile_path
 
 
@@ -179,10 +192,10 @@ def get_tile_image_path_by_slide_row_col(slide_number, row, col):
   Returns:
     Path to image tile.
   """
-  padded_sl_num = str(slide_number).zfill(3)
+  padded_sl_num = str(slide_number).zfill(4)
   wilcard_path = os.path.join(TILE_DIR, padded_sl_num,
-                              TRAIN_PREFIX + padded_sl_num + "-" + TILE_SUFFIX + "-r%d-c%d-*." % (
-                                row, col) + DEST_TRAIN_EXT)
+                              SLIDE_PREFIX + padded_sl_num + "-" + TILE_SUFFIX + "-r%d-c%d-*." % (
+                                row, col) + JPG)
   img_path = glob.glob(wilcard_path)[0]
   return img_path
 
@@ -205,15 +218,15 @@ def get_training_image_path(slide_number, large_w=None, large_h=None, small_w=No
   Returns:
      Path to the image file.
   """
-  padded_sl_num = str(slide_number).zfill(3)
+  padded_sl_num = str(slide_number).zfill(4)
   if large_w is None and large_h is None and small_w is None and small_h is None:
-    wildcard_path = os.path.join(DEST_TRAIN_DIR, TRAIN_PREFIX + padded_sl_num + "*." + DEST_TRAIN_EXT)
+    wildcard_path = os.path.join(GDC_TCGA_IMAGE_DIR, SLIDE_PREFIX + padded_sl_num + "*." + IMAGE_EXT)
     print(wildcard_path)
     img_path = glob.glob(wildcard_path)[0]
   else:
-    img_path = os.path.join(DEST_TRAIN_DIR, TRAIN_PREFIX + padded_sl_num + "-" + str(
-      SCALE_FACTOR) + "x-" + DEST_TRAIN_SUFFIX + str(
-      large_w) + "x" + str(large_h) + "-" + str(small_w) + "x" + str(small_h) + "." + DEST_TRAIN_EXT)
+    img_path = os.path.join(GDC_TCGA_IMAGE_DIR, SLIDE_PREFIX + padded_sl_num + "-" + str(
+      SCALE_FACTOR) + "x-" + str(
+      large_w) + "x" + str(large_h) + "-" + str(small_w) + "x" + str(small_h) + "." + IMAGE_EXT)
   return img_path
 
 
@@ -235,14 +248,14 @@ def get_training_thumbnail_path(slide_number, large_w=None, large_h=None, small_
   Returns:
      Path to the thumbnail file.
   """
-  padded_sl_num = str(slide_number).zfill(3)
+  padded_sl_num = str(slide_number).zfill(4)
   if large_w is None and large_h is None and small_w is None and small_h is None:
-    wilcard_path = os.path.join(DEST_TRAIN_THUMBNAIL_DIR, TRAIN_PREFIX + padded_sl_num + "*." + THUMBNAIL_EXT)
+    wilcard_path = os.path.join(GDC_TCGA_THUMBNAIL_DIR, SLIDE_PREFIX + padded_sl_num + "*." + IMAGE_EXT)
     img_path = glob.glob(wilcard_path)[0]
   else:
-    img_path = os.path.join(DEST_TRAIN_THUMBNAIL_DIR, TRAIN_PREFIX + padded_sl_num + "-" + str(
-      SCALE_FACTOR) + "x-" + DEST_TRAIN_SUFFIX + str(
-      large_w) + "x" + str(large_h) + "-" + str(small_w) + "x" + str(small_h) + "." + THUMBNAIL_EXT)
+    img_path = os.path.join(GDC_TCGA_THUMBNAIL_DIR, SLIDE_PREFIX + padded_sl_num + "-" + str(
+      SCALE_FACTOR) + "x-" + str(
+      large_w) + "x" + str(large_h) + "-" + str(small_w) + "x" + str(small_h) + "." + IMAGE_EXT)
   return img_path
 
 
@@ -308,12 +321,12 @@ def get_filter_image_filename(slide_number, filter_number, filter_name_info, thu
     The filter image or thumbnail file name.
   """
   if thumbnail:
-    ext = THUMBNAIL_EXT
+    ext = JPG
   else:
-    ext = DEST_TRAIN_EXT
-  padded_sl_num = str(slide_number).zfill(3)
-  padded_fi_num = str(filter_number).zfill(3)
-  img_filename = TRAIN_PREFIX + padded_sl_num + "-" + padded_fi_num + "-" + FILTER_SUFFIX + filter_name_info + "." + ext
+    ext = JPG
+  padded_sl_num = str(slide_number).zfill(4)
+  padded_fi_num = str(filter_number).zfill(4)
+  img_filename = SLIDE_PREFIX + padded_sl_num + "-" + padded_fi_num + "-" + FILTER_SUFFIX + filter_name_info + "." + ext
   return img_filename
 
 
@@ -449,14 +462,14 @@ def get_tile_summary_image_filename(slide_number, thumbnail=False):
     The tile summary image file name.
   """
   if thumbnail:
-    ext = THUMBNAIL_EXT
+    ext = JPG
   else:
-    ext = DEST_TRAIN_EXT
-  padded_sl_num = str(slide_number).zfill(3)
+    ext = JPG
+  padded_sl_num = str(slide_number).zfill(4)
 
   training_img_path = get_training_image_path(slide_number)
   large_w, large_h, small_w, small_h = parse_dimensions_from_image_filename(training_img_path)
-  img_filename = TRAIN_PREFIX + padded_sl_num + "-" + str(SCALE_FACTOR) + "x-" + str(large_w) + "x" + str(
+  img_filename = SLIDE_PREFIX + padded_sl_num + "-" + str(SCALE_FACTOR) + "x-" + str(large_w) + "x" + str(
     large_h) + "-" + str(small_w) + "x" + str(small_h) + "-" + TILE_SUMMARY_SUFFIX + "." + ext
 
   return img_filename
@@ -478,14 +491,14 @@ def get_top_tiles_image_filename(slide_number, thumbnail=False):
     The top tiles image file name.
   """
   if thumbnail:
-    ext = THUMBNAIL_EXT
+    ext = JPG
   else:
-    ext = DEST_TRAIN_EXT
-  padded_sl_num = str(slide_number).zfill(3)
+    ext = JPG
+  padded_sl_num = str(slide_number).zfill(4)
 
   training_img_path = get_training_image_path(slide_number)
   large_w, large_h, small_w, small_h = parse_dimensions_from_image_filename(training_img_path)
-  img_filename = TRAIN_PREFIX + padded_sl_num + "-" + str(SCALE_FACTOR) + "x-" + str(large_w) + "x" + str(
+  img_filename = SLIDE_PREFIX + padded_sl_num + "-" + str(SCALE_FACTOR) + "x-" + str(large_w) + "x" + str(
     large_h) + "-" + str(small_w) + "x" + str(small_h) + "-" + TOP_TILES_SUFFIX + "." + ext
 
   return img_filename
@@ -541,11 +554,11 @@ def get_tile_data_filename(slide_number):
   Returns:
     The tile data file name.
   """
-  padded_sl_num = str(slide_number).zfill(3)
+  padded_sl_num = str(slide_number).zfill(4)
 
   training_img_path = get_training_image_path(slide_number)
   large_w, large_h, small_w, small_h = parse_dimensions_from_image_filename(training_img_path)
-  data_filename = TRAIN_PREFIX + padded_sl_num + "-" + str(SCALE_FACTOR) + "x-" + str(large_w) + "x" + str(
+  data_filename = SLIDE_PREFIX + padded_sl_num + "-" + str(SCALE_FACTOR) + "x-" + str(large_w) + "x" + str(
     large_h) + "-" + str(small_w) + "x" + str(small_h) + "-" + TILE_DATA_SUFFIX + ".csv"
 
   return data_filename
@@ -583,12 +596,12 @@ def get_filter_image_result(slide_number):
   Returns:
     Path to the filter image file.
   """
-  padded_sl_num = str(slide_number).zfill(3)
+  padded_sl_num = str(slide_number).zfill(4)
   training_img_path = get_training_image_path(slide_number)
   large_w, large_h, small_w, small_h = parse_dimensions_from_image_filename(training_img_path)
-  img_path = os.path.join(FILTER_DIR, TRAIN_PREFIX + padded_sl_num + "-" + str(
+  img_path = os.path.join(FILTER_DIR, SLIDE_PREFIX + padded_sl_num + "-" + str(
     SCALE_FACTOR) + "x-" + FILTER_SUFFIX + str(large_w) + "x" + str(large_h) + "-" + str(small_w) + "x" + str(
-    small_h) + "-" + FILTER_RESULT_TEXT + "." + DEST_TRAIN_EXT)
+    small_h) + "-" + FILTER_RESULT_TEXT + "." + JPG)
   return img_path
 
 
@@ -605,12 +618,12 @@ def get_filter_thumbnail_result(slide_number):
   Returns:
     Path to the filter thumbnail file.
   """
-  padded_sl_num = str(slide_number).zfill(3)
+  padded_sl_num = str(slide_number).zfill(4)
   training_img_path = get_training_image_path(slide_number)
   large_w, large_h, small_w, small_h = parse_dimensions_from_image_filename(training_img_path)
-  img_path = os.path.join(FILTER_THUMBNAIL_DIR, TRAIN_PREFIX + padded_sl_num + "-" + str(
+  img_path = os.path.join(FILTER_THUMBNAIL_DIR, SLIDE_PREFIX + padded_sl_num + "-" + str(
     SCALE_FACTOR) + "x-" + FILTER_SUFFIX + str(large_w) + "x" + str(large_h) + "-" + str(small_w) + "x" + str(
-    small_h) + "-" + FILTER_RESULT_TEXT + "." + THUMBNAIL_EXT)
+    small_h) + "-" + FILTER_RESULT_TEXT + "." + JPG)
   return img_path
 
 
@@ -665,8 +678,8 @@ def training_slide_to_image(slide_number):
 
   img_path = get_training_image_path(slide_number, large_w, large_h, new_w, new_h)
   print("Saving image to: " + img_path)
-  if not os.path.exists(DEST_TRAIN_DIR):
-    os.makedirs(DEST_TRAIN_DIR)
+  if not os.path.exists(GDC_TCGA_IMAGE_DIR):
+    os.makedirs(GDC_TCGA_IMAGE_DIR)
   img.save(img_path)
 
   thumbnail_path = get_training_thumbnail_path(slide_number, large_w, large_h, new_w, new_h)
@@ -687,14 +700,18 @@ def slide_to_scaled_pil_image(slide_number):
   #print("Opening Slide #%d: %s" % (slide_number, slide_filepath))
   print("Opening Slide #%s: %s" % (slide_number, slide_filepath))
   slide = open_slide(slide_filepath)
+  print("Dimensions: " + str(slide.dimensions))
 
   large_w, large_h = slide.dimensions
+  print("Large W: " + str(large_w))
+  print("Large H: " + str(large_h))
   new_w = math.floor(large_w / SCALE_FACTOR)
   new_h = math.floor(large_h / SCALE_FACTOR)
   level = slide.get_best_level_for_downsample(SCALE_FACTOR)
+  print("LEVEL: " + str(level))
   whole_slide_image = slide.read_region((0, 0), level, slide.level_dimensions[level])
   whole_slide_image = whole_slide_image.convert("RGB")
-  img = whole_slide_image.resize((new_w, new_h), PIL.Image.BILINEAR)
+  img = whole_slide_image.resize((new_w, new_h), Image.Resampling.BILINEAR)
   return img, large_w, large_h, new_w, new_h
 
 
@@ -735,7 +752,7 @@ def save_thumbnail(pil_img, size, path, display_path=False):
     display_path: If True, display thumbnail path in console.
   """
   max_size = tuple(round(size * d / max(pil_img.size)) for d in pil_img.size)
-  img = pil_img.resize(max_size, PIL.Image.BILINEAR)
+  img = pil_img.resize(max_size, Image.Resampling.BILINEAR)
   if display_path:
     print("Saving thumbnail to: " + path)
   dir = os.path.dirname(path)
@@ -751,7 +768,17 @@ def get_num_training_slides():
   Returns:
     The total number of WSI training slide images.
   """
-  num_training_slides = len(glob.glob1(DEST_TRAIN_DIR, "*." + DEST_TRAIN_EXT))
+  num_training_slides = len(glob.glob1(GDC_TCGA_IMAGE_DIR, "*." + JPG))
+  return num_training_slides
+
+def get_num_slides():
+  """
+  Obtain the total number of WSI slides inside the ./slide dir.
+
+  Returns:
+    The total number of WSI slides.
+  """
+  num_training_slides = len(glob.glob1(SLIDE_DIR, "*." + SVS))
   return num_training_slides
 
 
@@ -767,7 +794,8 @@ def training_slide_range_to_images(start_ind, end_ind):
     The starting index and the ending index of the slides that were converted.
   """
   for slide_num in range(start_ind, end_ind + 1):
-    training_slide_to_image(slide_num)
+    if(str(get_training_slide_path(slide_num)) != "False"):
+      training_slide_to_image(slide_num)
   return (start_ind, end_ind)
 
 
@@ -794,7 +822,8 @@ def multiprocess_training_slides_to_images():
   num_processes = multiprocessing.cpu_count()
   pool = multiprocessing.Pool(num_processes)
 
-  num_train_images = get_num_training_slides()
+  num_train_images = 1041
+  print("Num training slides: " + str(num_train_images))
   if num_processes > num_train_images:
     num_processes = num_train_images
   images_per_process = num_train_images / num_processes
@@ -1019,21 +1048,10 @@ def slide_info(display_all_properties=False):
 
   t.elapsed_display()
 
-
 if __name__ == "__main__":
 
-  print(SRC_TRAIN_DIR)
-  isExist = os.path.exists(SRC_TRAIN_DIR)
-  print(isExist)
-  wsi_file = os.path.join(SRC_TRAIN_DIR, "TCGA-AN-A0FN-01Z-00-DX1.CAA3C2D0-7E74-48E5-ACB7-487434C7AAD2.svs")
-  #slide_number = "AN-A0FN-01Z-00-DX1.CAA3C2D0-7E74-48E5-ACB7-487434C7AAD2"
-  isFile = os.path.isfile(wsi_file)
-  print(isFile)
-  slide_number = "AO-A0JB-01Z-00-DX1.250FE098-345B-4981-9236-0519E1C9058E"
-  slide = open_slide(wsi_file)
-  slide_path = get_training_slide_path(slide_number)
-  training_slide_to_image(slide_number)
-
+  #slide_path = get_training_slide_path(1)
+  #print(str(slide_path))
   #show_slide(slide_number)
   #print(slide_path)
   
@@ -1048,4 +1066,4 @@ if __name__ == "__main__":
 
   # slide_to_scaled_pil_image(5)[0].show()
   # singleprocess_training_slides_to_images()
-  # multiprocess_training_slides_to_images()
+  multiprocess_training_slides_to_images()

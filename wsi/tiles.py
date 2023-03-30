@@ -1957,7 +1957,5 @@ def dynamic_tile(slide_num, row, col, small_tile_in_tile=False):
 if __name__ == "__main__":
   # tile = dynamic_tile(2, 29, 16, True)
   # tile.display_with_histograms()
-  slide_number = "AN-A0FN-01Z-00-DX1.CAA3C2D0-7E74-48E5-ACB7-487434C7AAD2"
-  slide_list = [slide_number]
-  singleprocess_filtered_images_to_tiles()
+  singleprocess_filtered_images_to_tiles(image_num_list=[319])
   # multiprocess_filtered_images_to_tiles()

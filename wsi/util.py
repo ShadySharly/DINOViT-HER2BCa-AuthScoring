@@ -15,6 +15,10 @@
 # ------------------------------------------------------------------------
 
 import os
+import glob
+import shutil
+from os import path
+import csv
 import datetime
 import numpy as np
 import pandas as pd
@@ -23,20 +27,30 @@ from PIL import Image, ImageDraw, ImageFont
 
 # If True, display additional NumPy array stats (min, max, mean, is_binary).
 ADDITIONAL_NP_STATS = False
+DATA = "data"
+SLIDE = "slide"
+MANIFEST = "manifest"
+TXT = "txt"
+SVS = "svs"
+DOT = "."
+GDC_TCGA = "GDC_TCGA"
 
 # GENERAL PATHS
 ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
-DATA_DIR = os.path.join(ROOT_DIR, "data")
+BASE_DIR = os.path.join(ROOT_DIR, DATA)
+SLIDE_DIR = os.path.join(BASE_DIR, GDC_TCGA, SLIDE)
+MANIFEST_DIR = os.path.join(BASE_DIR, GDC_TCGA, MANIFEST)
+
 
 # GDC_TCGA PATHS
-GDC_TCGA_DATA_DIR = os.path.join(DATA_DIR, "GDC_TCGA")
+GDC_TCGA_DATA_DIR = os.path.join(BASE_DIR, GDC_TCGA)
 GDC_TCGA_EVAL_DIR = os.path.join(GDC_TCGA_DATA_DIR, "evaluation")
 GDC_TCGA_TRAIN_DIR = os.path.join(GDC_TCGA_DATA_DIR, "training")
 GDC_TCGA_MANIFEST_DIR = os.path.join(GDC_TCGA_DATA_DIR, "manifest")
-GDC_TCGA_WSI_DIR = os.path.join(GDC_TCGA_DATA_DIR, "wsi")
+GDC_TCGA_SLIDE_DIR = os.path.join(GDC_TCGA_DATA_DIR, "slide")
 
 # UCH_CPDAI PATHS
-UCH_CPDAI_DATA_DIR = os.path.join(DATA_DIR, "UCH_CPDAI")
+UCH_CPDAI_DATA_DIR = os.path.join(BASE_DIR, "UCH_CPDAI")
 
 
 def pil_to_np_rgb(pil_img):
@@ -179,9 +193,8 @@ def txt_to_csv(file_path, dest_path):
   print("No file_path exists")
   return False
 
-
 def filter_manifest():
-  brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Data.csv", delimiter=";")
+  brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
   manifest_file = open(GDC_TCGA_MANIFEST_DIR + "/gdc_manifest_3111.txt", "r")
   filtered_manifest_file = open(GDC_TCGA_MANIFEST_DIR + "/gdc_manifest_general.txt", "w")
   patient_barcodes = brca_file['patient_barcode'].tolist()
@@ -189,52 +202,66 @@ def filter_manifest():
   manifest_list = manifest_file.readlines()
 
   manifest_list = list(filter(lambda manifest_line : 
-    list(filter(lambda patient : patient + '-01Z-00-DX1' in manifest_line, patient_barcodes)),
+    list(filter(lambda patient : patient in manifest_line, patient_barcodes)),
   manifest_list))
 
   list(map(lambda manifest_line : filtered_manifest_file.write(manifest_line), manifest_list))
 
   filtered_manifest_file.close()
 
-def rename_wsi_dataset():
-  wsi_name_list = os.listdir(GDC_TCGA_WSI_DIR)
-  list(map(lambda wsi_name : rename_wsi(wsi_name), wsi_name_list))
+def add_slide_barcode():
+  brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
+  slide_name_list = brca_file['slide_name'].to_list()
+  barcode_name_list = list(map(lambda name: extract_patient_barcode(name), slide_name_list))
+  brca_file['slide_barcode'] = barcode_name_list
+  brca_file.to_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Paper.csv", index=False, sep=";")
 
-def rename_wsi(wsi_name):
-  brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Data.csv", delimiter=";")
-  patient_id = extract_patient_barcode(wsi_name)
-  patient_row = brca_file.loc[brca_file['patient_barcode'] == patient_id]
-  patient_id = patient_row.iloc[0]['patient_id']
+def rename_slide_dataset():
+  wsi_name_list = os.listdir(GDC_TCGA_SLIDE_DIR)
+  list(map(lambda wsi_name : rename_slide(wsi_name), wsi_name_list))
 
-  src_name = GDC_TCGA_WSI_DIR + "/" + wsi_name
-  dest_name = GDC_TCGA_WSI_DIR + "/" + patient_id + ".svs"
+def rename_slide(slide_name):
+  brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
+  slide_barcode = extract_patient_barcode(slide_name)
+  print(slide_barcode)
+  slide_row = brca_file.loc[brca_file['slide_barcode'] == slide_barcode]
+  print(str(slide_row))
+  slide_id = slide_row.iloc[0]['slide_id']
 
-  os.rename(src_name, dest_name)
+  src_name = GDC_TCGA_SLIDE_DIR + "/" + slide_name
+  dest_name = GDC_TCGA_SLIDE_DIR + "/" + slide_id + ".svs"
+
+  os.rename(dest_name, src_name)
 
 def extract_patient_barcode(file_name):
   name_split = file_name.split("-")
-  patient_barcode = name_split[0] + "-" + name_split[1] + "-" + name_split[2]
-  return patient_barcode
+  slide_barcode = name_split[0] + "-" + name_split[1] + "-" + name_split[2]
+  return slide_barcode
 
-def partition_manifest(max_slides):
-  manifest_file = open(GDC_TCGA_MANIFEST_DIR + "/gdc_manifest_general.txt", "r")
+def move_manifests_to_slides():
+  moved_slides = 0
+  not_moved_slides = 0
 
-  manifest_header = manifest_file.readline()
-  manifest_patients = manifest_file.readlines()
+  for slide_name in os.listdir(MANIFEST_DIR):
+    slide_dir = os.path.join(MANIFEST_DIR, slide_name)
+    
+    if(os.path.isdir(slide_dir)):
+      slide_files = os.listdir(slide_dir)
+      slide_name = slide_files[-1]
+      src_path = os.path.join(slide_dir,slide_name)
+      dest_path = os.path.join(GDC_TCGA_SLIDE_DIR, slide_name)
+      #print("SRC: " + src_path + " - " + str(os.path.isfile(src_path)))
+      #print("DEST: " + dest_path + " - " + str(os.path.isfile(dest_path)))
+      if(os.path.isfile(dest_path) == False
+         ):
+        shutil.move(src_path, dest_path)
+        print("Moved slide: " + slide_name)
+        moved_slides+=1
 
-  while
-  
+      else:
+        print("Not moved existing slide: " + slide_name)
+        not_moved_slides+=1
 
-
-
-def create_manifest_partition(header, file, max_slides, part_id, start_index, end_index):
-  partition_name = "gdc_manifest_" + max_slides + "_" + part_id + ".txt"
-  partition_file = open(partition_name, "w")
-  partition_file.write(header)
-
-
-
-  
 if __name__ == "__main__":
 
   #manifest_csv = txt_to_csv(GDC_TCGA_MANIFEST_DIR + "/gdc_manifest_3111.txt", GDC_TCGA_MANIFEST_DIR)
@@ -243,7 +270,10 @@ if __name__ == "__main__":
   #rename_dataset()
   #rename_wsi()
   #rename_wsi_dataset()
-  My_list = [*range(100, 1057, 100)] + [1057]
-  print(My_list)
-  partition_manifest(100)
+  #rename_wsi_dataset()
+  #set_slide_id_to_barcode()
+  #move_manifests_to_slides()
+  rename_slide_dataset()
+
+  
 

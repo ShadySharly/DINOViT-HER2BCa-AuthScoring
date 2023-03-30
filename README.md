@@ -14,7 +14,7 @@ For this project we are using the data provided by the GDC Data Portal (https://
 
 Once the manifest (TXT file) and client is downloaded, we can retreive the WSIs we selected into the manifest file. For this we have to run the next command inside the same directory where is located the "gdc-client"
 ```
-gdc-client download -m manifest.txt
+./gdc-client download -m manifest.txt
 ```
 
 ### Requirements installation
@@ -23,6 +23,13 @@ In order run the application is required to install some python dependencies, th
 pip install -r requirements.txt
 
 ```
+Also during the development of the application were encountered some issues related with the scaling of the original slide to a smaller image using openslide, for this is needed to run the next command:
+```
+conda install pixman=0.36.0
+```
+Tho check this issue with more details visit the url: 
+https://github.com/openslide/openslide/issues/291 
+
 
 ## Pretrained models
 You can choose to download only the weights of the pretrained backbone used for downstream tasks, or the full checkpoint which contains backbone and projection head weights for both student and teacher networks. We also provide the backbone in `onnx` format, as well as detailed arguments and training/evaluation logs. Note that `DeiT-S` and `ViT-S` names refer exactly to the same architecture.
