@@ -197,7 +197,7 @@ def filter_manifest():
   brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
   manifest_file = open(GDC_TCGA_MANIFEST_DIR + "/gdc_manifest_3111.txt", "r")
   filtered_manifest_file = open(GDC_TCGA_MANIFEST_DIR + "/gdc_manifest_general.txt", "w")
-  patient_barcodes = brca_file['patient_barcode'].tolist()
+  patient_barcodes = brca_file['slide_name'].tolist()
   filtered_manifest_file.write(manifest_file.readline())
   manifest_list = manifest_file.readlines()
 
@@ -208,6 +208,12 @@ def filter_manifest():
   list(map(lambda manifest_line : filtered_manifest_file.write(manifest_line), manifest_list))
 
   filtered_manifest_file.close()
+
+def divide_manifest():
+  filtered_manifest_file = open(GDC_TCGA_MANIFEST_DIR + "/gdc_manifest_general.txt", "r")
+  header = ['']
+
+
 
 def add_slide_barcode():
   brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
@@ -273,7 +279,8 @@ if __name__ == "__main__":
   #rename_wsi_dataset()
   #set_slide_id_to_barcode()
   #move_manifests_to_slides()
-  rename_slide_dataset()
+  #rename_slide_dataset()
+  filter_manifest()
 
   
 
