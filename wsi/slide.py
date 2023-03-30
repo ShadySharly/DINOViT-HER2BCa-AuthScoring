@@ -700,15 +700,10 @@ def slide_to_scaled_pil_image(slide_number):
   #print("Opening Slide #%d: %s" % (slide_number, slide_filepath))
   print("Opening Slide #%s: %s" % (slide_number, slide_filepath))
   slide = open_slide(slide_filepath)
-  print("Dimensions: " + str(slide.dimensions))
-
   large_w, large_h = slide.dimensions
-  print("Large W: " + str(large_w))
-  print("Large H: " + str(large_h))
   new_w = math.floor(large_w / SCALE_FACTOR)
   new_h = math.floor(large_h / SCALE_FACTOR)
   level = slide.get_best_level_for_downsample(SCALE_FACTOR)
-  print("LEVEL: " + str(level))
   whole_slide_image = slide.read_region((0, 0), level, slide.level_dimensions[level])
   whole_slide_image = whole_slide_image.convert("RGB")
   img = whole_slide_image.resize((new_w, new_h), Image.Resampling.BILINEAR)
@@ -823,7 +818,7 @@ def multiprocess_training_slides_to_images():
   pool = multiprocessing.Pool(num_processes)
 
   num_train_images = 1041
-  print("Num training slides: " + str(num_train_images))
+
   if num_processes > num_train_images:
     num_processes = num_train_images
   images_per_process = num_train_images / num_processes
