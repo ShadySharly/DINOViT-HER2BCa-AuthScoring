@@ -35,9 +35,13 @@ from util import Time
 TISSUE_HIGH_THRESH = 80
 TISSUE_LOW_THRESH = 10
 
-ROW_TILE_SIZE = 1024
-COL_TILE_SIZE = 1024
-NUM_TOP_TILES = 50
+#ROW_TILE_SIZE = 1024
+#COL_TILE_SIZE = 1024
+ROW_TILE_SIZE = 256
+COL_TILE_SIZE = 256
+NUM_TOP_TILES = 70
+MIN_SCORE = 0.7
+MIN_TISSUE_PERCENTAGE = 70
 
 DISPLAY_TILE_SUMMARY_LABELS = False
 TILE_LABEL_TEXT_SIZE = 10
@@ -56,8 +60,8 @@ FADED_MEDIUM_COLOR = (255, 255, 128)
 FADED_LOW_COLOR = (255, 210, 128)
 FADED_NONE_COLOR = (255, 128, 128)
 
-FONT_PATH = "/Library/Fonts/Arial Bold.ttf"
-SUMMARY_TITLE_FONT_PATH = "/Library/Fonts/Courier New Bold.ttf"
+#FONT_PATH = "/Library/Fonts/Arial Bold.ttf"
+#SUMMARY_TITLE_FONT_PATH = "/Library/Fonts/Courier New Bold.ttf"
 SUMMARY_TITLE_TEXT_COLOR = (0, 0, 0)
 SUMMARY_TITLE_TEXT_SIZE = 24
 SUMMARY_TILE_TEXT_COLOR = (255, 255, 255)
@@ -155,6 +159,9 @@ def generate_tile_summaries(tile_sum, np_img, display=True, save_summary=False):
     display: If True, display tile summary to screen.
     save_summary: If True, save tile summary images.
   """
+
+  print(slide.FONT_PATH)
+  print(slide.SUMMARY_TITLE_FONT_PATH)
   z = 300  # height of area at top of summary slide
   slide_num = tile_sum.slide_num
   rows = tile_sum.scaled_h
@@ -177,7 +184,7 @@ def generate_tile_summaries(tile_sum, np_img, display=True, save_summary=False):
 
   summary_txt = summary_title(tile_sum) + "\n" + summary_stats(tile_sum)
 
-  summary_font = ImageFont.truetype(SUMMARY_TITLE_FONT_PATH, size=SUMMARY_TITLE_TEXT_SIZE)
+  summary_font = ImageFont.truetype(slide.SUMMARY_TITLE_FONT_PATH, size=SUMMARY_TITLE_TEXT_SIZE)
   draw.text((5, 5), summary_txt, SUMMARY_TITLE_TEXT_COLOR, font=summary_font)
   draw_orig.text((5, 5), summary_txt, SUMMARY_TITLE_TEXT_COLOR, font=summary_font)
 
@@ -186,7 +193,7 @@ def generate_tile_summaries(tile_sum, np_img, display=True, save_summary=False):
     for t in tile_sum.tiles:
       count += 1
       label = "R%d\nC%d" % (t.r, t.c)
-      font = ImageFont.truetype(FONT_PATH, size=TILE_LABEL_TEXT_SIZE)
+      font = ImageFont.truetype(slide.FONT_PATH, size=TILE_LABEL_TEXT_SIZE)
       # drop shadow behind text
       draw.text(((t.c_s + 3), (t.r_s + 3 + z)), label, (0, 0, 0), font=font)
       draw_orig.text(((t.c_s + 3), (t.r_s + 3 + z)), label, (0, 0, 0), font=font)
@@ -250,7 +257,7 @@ def generate_top_tile_summaries(tile_sum, np_img, display=True, save_summary=Fal
   summary_title = "Slide %03d Top Tile Summary:" % slide_num
   summary_txt = summary_title + "\n" + summary_stats(tile_sum)
 
-  summary_font = ImageFont.truetype(SUMMARY_TITLE_FONT_PATH, size=SUMMARY_TITLE_TEXT_SIZE)
+  summary_font = ImageFont.truetype(slide.SUMMARY_TITLE_FONT_PATH, size=SUMMARY_TITLE_TEXT_SIZE)
   draw.text((5, 5), summary_txt, SUMMARY_TITLE_TEXT_COLOR, font=summary_font)
   draw_orig.text((5, 5), summary_txt, SUMMARY_TITLE_TEXT_COLOR, font=summary_font)
 
@@ -261,7 +268,7 @@ def generate_top_tile_summaries(tile_sum, np_img, display=True, save_summary=Fal
   v_ds_offset = TILE_BORDER_SIZE + 1
   for t in tiles_to_label:
     label = "R%d\nC%d" % (t.r, t.c)
-    font = ImageFont.truetype(FONT_PATH, size=TILE_LABEL_TEXT_SIZE)
+    font = ImageFont.truetype(slide.FONT_PATH, size=TILE_LABEL_TEXT_SIZE)
     # drop shadow behind text
     draw.text(((t.c_s + h_ds_offset), (t.r_s + v_ds_offset + z)), label, (0, 0, 0), font=font)
     draw_orig.text(((t.c_s + h_ds_offset), (t.r_s + v_ds_offset + z)), label, (0, 0, 0), font=font)
@@ -315,7 +322,7 @@ def np_tile_stat_img(tiles):
     count += 1
     tup = (t.r, t.c, t.rank, t.tissue_percentage, t.color_factor, t.s_and_v_factor, t.quantity_factor, t.score)
     tile_stats += "R%03d C%03d #%003d TP:%6.2f%% CF:%4.0f SVF:%4.2f QF:%4.2f S:%0.4f" % tup
-  np_stats = np_text(tile_stats, font_path=SUMMARY_TITLE_FONT_PATH, font_size=14)
+  np_stats = np_text(tile_stats, font_path=slide.SUMMARY_TITLE_FONT_PATH, font_size=14)
   return np_stats
 
 
@@ -497,26 +504,27 @@ def save_top_tiles_on_original_image(pil_img, slide_num):
     "%-20s | Time: %-14s  Name: %s" % ("Save Top Orig Thumb", str(t.elapsed()), thumbnail_filepath))
 
 
-def summary_and_tiles(slide_num, display=True, save_summary=False, save_data=True, save_top_tiles=True):
+def summary_and_tiles(slide_num, display=True, save_summary=True, save_data=True, save_top_tiles=True):
   """
   Generate tile summary and top tiles for slide.
 
   Args:
     slide_num: The slide number.
     display: If True, display tile summary to screen.
-    save_summary: If True, save tile summary images.
+    save_summary: If True, save tile summary images.+
     save_data: If True, save tile data to csv file.
     save_top_tiles: If True, save top tiles to files.
 
   """
   img_path = slide.get_filter_image_result(slide_num)
-  np_img = slide.open_image_np(img_path)
-
+  np_img = slide.open_image_np(img_path) 
+  print("WEA SUMMARY")
   tile_sum = score_tiles(slide_num, np_img)
+  
   if save_data:
     save_tile_data(tile_sum)
-  generate_tile_summaries(tile_sum, np_img, display=display, save_summary=save_summary)
-  generate_top_tile_summaries(tile_sum, np_img, display=display, save_summary=save_summary)
+    generate_tile_summaries(tile_sum, np_img, display=display, save_summary=save_summary)
+    generate_top_tile_summaries(tile_sum, np_img, display=display, save_summary=save_summary)
   if save_top_tiles:
     for tile in tile_sum.top_tiles():
       tile.save_tile()
@@ -569,10 +577,34 @@ def tile_to_pil_tile(tile):
   s = slide.open_slide(slide_filepath)
 
   x, y = t.o_c_s, t.o_r_s
+  print("x" + str(x))
+  print("y" + str(x))
   w, h = t.o_c_e - t.o_c_s, t.o_r_e - t.o_r_s
+  print("x" + str(w))
+  print("y" + str(h))
   tile_region = s.read_region((x, y), 0, (w, h))
   # RGBA to RGB
   pil_img = tile_region.convert("RGB")
+  return pil_img
+
+def tile_to_pil_tile_on_original_image(tile):
+  """
+  Convert tile information into the corresponding tile as a PIL image read from the PIL image file.
+
+  Args:
+    tile: Tile object.
+
+  Return:
+    Tile as a PIL image.
+  """
+  t = tile
+  image_filepath = slide.get_training_image_path(t.slide_num)
+  image = slide.open_image(image_filepath)
+
+  x, y = t.c_s, t.r_s
+  w, h = t.c_e - t.c_s, t.r_e - t.r_s
+  # RGBA to RGB
+  pil_img = image.crop((x, y, x + w, y + h))
   return pil_img
 
 
@@ -600,7 +632,7 @@ def save_display_tile(tile, save=True, display=False):
     save: If True, save tile image.
     display: If True, dispaly tile image.
   """
-  tile_pil_img = tile_to_pil_tile(tile)
+  tile_pil_img = tile_to_pil_tile_on_original_image(tile)
 
   if save:
     t = Time()
@@ -638,8 +670,10 @@ def score_tiles(slide_num, np_img=None, dimensions=None, small_tile_in_tile=Fals
   if np_img is None:
     np_img = slide.open_image_np(img_path)
 
-  row_tile_size = round(ROW_TILE_SIZE / slide.SCALE_FACTOR)  # use round?
-  col_tile_size = round(COL_TILE_SIZE / slide.SCALE_FACTOR)  # use round?
+  #row_tile_size = round(ROW_TILE_SIZE / slide.SCALE_FACTOR)  # use round?
+  #col_tile_size = round(COL_TILE_SIZE / slide.SCALE_FACTOR)  # use round?
+  row_tile_size = ROW_TILE_SIZE  # use round?
+  col_tile_size = COL_TILE_SIZE  # use round?
 
   num_row_tiles, num_col_tiles = get_num_tiles(h, w, row_tile_size, col_tile_size)
 
@@ -1421,7 +1455,7 @@ def display_image_with_rgb_histograms(np_rgb, text=None, scale_up=False):
   pil_combo.show()
 
 
-def pil_text(text, w_border=TILE_TEXT_W_BORDER, h_border=TILE_TEXT_H_BORDER, font_path=FONT_PATH,
+def pil_text(text, w_border=TILE_TEXT_W_BORDER, h_border=TILE_TEXT_H_BORDER, font_path=slide.FONT_PATH,
              font_size=TILE_TEXT_SIZE, text_color=TILE_TEXT_COLOR, background=TILE_TEXT_BACKGROUND_COLOR):
   """
   Obtain a PIL image representation of text.
@@ -1447,7 +1481,7 @@ def pil_text(text, w_border=TILE_TEXT_W_BORDER, h_border=TILE_TEXT_H_BORDER, fon
   return image
 
 
-def np_text(text, w_border=TILE_TEXT_W_BORDER, h_border=TILE_TEXT_H_BORDER, font_path=FONT_PATH,
+def np_text(text, w_border=TILE_TEXT_W_BORDER, h_border=TILE_TEXT_H_BORDER, font_path=slide.FONT_PATH,
             font_size=TILE_TEXT_SIZE, text_color=TILE_TEXT_COLOR, background=TILE_TEXT_BACKGROUND_COLOR):
   """
   Obtain a NumPy array image representation of text.
@@ -1814,14 +1848,56 @@ class TileSummary:
     """
     sorted_list = sorted(self.tiles, key=lambda t: t.score, reverse=True)
     return sorted_list
+  
+  def filter_tiles_by_tissue_percentage(self):
+    """
+    Retrieve the tiles ranked by score.
 
-  def top_tiles(self):
+    Returns:
+       List of the tiles ranked by score.
+    """
+    filtered_tiles = []
+    sorted_tiles = self.tiles_by_tissue_percentage()
+    for tile in sorted_tiles:
+      if(tile.tissue_percentage >= TISSUE_HIGH_THRESH):
+        filtered_tiles.append(tile)
+
+    return filtered_tiles
+
+  def filter_tiles_by_score(self):
+    """
+    Retrieve the tiles ranked by score.
+
+    Returns:
+       List of the tiles ranked by score.
+    """
+    filtered_tiles = []
+    for tile in self.tiles:
+      if(tile.score >= MIN_SCORE):
+        filtered_tiles.append(tile)
+
+    return filtered_tiles
+
+  def top_tiles(self, min_score=None, min_tissue_percentage=True):
     """
     Retrieve the top-scoring tiles.
 
     Returns:
        List of the top-scoring tiles.
     """
+    print("---------------------TILES-----------------------------")
+    if(min_score is True):
+      print("filter By Tile Tissue Percentage")
+      top_tiles = self.filter_tiles_by_score()
+      print(top_tiles)
+      return top_tiles
+    
+    elif(min_tissue_percentage is True):
+      print("filter By Tile Score")
+      top_tiles = self.filter_tiles_by_tissue_percentage()
+      print(top_tiles)
+      return top_tiles
+
     sorted_tiles = self.tiles_by_score()
     top_tiles = sorted_tiles[:NUM_TOP_TILES]
     return top_tiles
@@ -1957,5 +2033,6 @@ def dynamic_tile(slide_num, row, col, small_tile_in_tile=False):
 if __name__ == "__main__":
   # tile = dynamic_tile(2, 29, 16, True)
   # tile.display_with_histograms()
-  singleprocess_filtered_images_to_tiles(image_num_list=[319])
+  # print("WEA  TILES")
+  singleprocess_filtered_images_to_tiles(image_num_list=[18])
   # multiprocess_filtered_images_to_tiles()

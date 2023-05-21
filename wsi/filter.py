@@ -230,7 +230,7 @@ def tissue_percent(np_img):
   return 100 - mask_percent(np_img)
 
 
-def filter_remove_small_objects(np_img, min_size=3000, avoid_overmask=True, overmask_thresh=95, output_type="uint8"):
+def filter_remove_small_objects(np_img, min_size=3000, avoid_overmask=False, overmask_thresh=95, output_type="uint8"):
   """
   Filter image to remove small objects (connected components) less than a particular minimum size. If avoid_overmask
   is True, this function can recursively call itself with progressively smaller minimum size objects to remove to
@@ -249,15 +249,20 @@ def filter_remove_small_objects(np_img, min_size=3000, avoid_overmask=True, over
   t = Time()
 
   rem_sm = np_img.astype(bool)  # make sure mask is boolean
+  print("print A")
   rem_sm = sk_morphology.remove_small_objects(rem_sm, min_size=min_size)
+  print("print A")
   mask_percentage = mask_percent(rem_sm)
+  print("print A")
   if (mask_percentage >= overmask_thresh) and (min_size >= 1) and (avoid_overmask is True):
+    print("print A")
     new_min_size = min_size / 2
     print("Mask percentage %3.2f%% >= overmask threshold %3.2f%% for Remove Small Objs size %d, so try %d" % (
       mask_percentage, overmask_thresh, min_size, new_min_size))
     rem_sm = filter_remove_small_objects(np_img, new_min_size, avoid_overmask, overmask_thresh, output_type)
   np_img = rem_sm
 
+  print("print A")
   if output_type == "bool":
     pass
   elif output_type == "float":
@@ -988,12 +993,12 @@ def filter_grays(rgb, tolerance=15, output_type="bool"):
   """
   t = Time()
   (h, w, c) = rgb.shape
-
-  rgb = rgb.astype(np.int)
   rg_diff = abs(rgb[:, :, 0] - rgb[:, :, 1]) <= tolerance
   rb_diff = abs(rgb[:, :, 0] - rgb[:, :, 2]) <= tolerance
   gb_diff = abs(rgb[:, :, 1] - rgb[:, :, 2]) <= tolerance
   result = ~(rg_diff & rb_diff & gb_diff)
+
+  print("WEA 10")
 
   if output_type == "bool":
     pass
@@ -1029,45 +1034,54 @@ def apply_image_filters(np_img, slide_num=None, info=None, save=False, display=F
     info: Dictionary of slide information (used for HTML display).
     save: If True, save image.
     display: If True, display image.
-
+  
   Returns:
     Resulting filtered image as a NumPy array.
   """
   rgb = np_img
   save_display(save, display, info, rgb, slide_num, 1, "Original", "rgb")
-
+  
   mask_not_green = filter_green_channel(rgb)
   rgb_not_green = util.mask_rgb(rgb, mask_not_green)
   save_display(save, display, info, rgb_not_green, slide_num, 2, "Not Green", "rgb-not-green")
-
+  print("Passed Filter 1")
+  '''
   mask_not_gray = filter_grays(rgb)
   rgb_not_gray = util.mask_rgb(rgb, mask_not_gray)
   save_display(save, display, info, rgb_not_gray, slide_num, 3, "Not Gray", "rgb-not-gray")
-
+  print("Passed Filter 2")
+  '''
   mask_no_red_pen = filter_red_pen(rgb)
   rgb_no_red_pen = util.mask_rgb(rgb, mask_no_red_pen)
   save_display(save, display, info, rgb_no_red_pen, slide_num, 4, "No Red Pen", "rgb-no-red-pen")
+  print("Passed Filter 3")
 
   mask_no_green_pen = filter_green_pen(rgb)
   rgb_no_green_pen = util.mask_rgb(rgb, mask_no_green_pen)
   save_display(save, display, info, rgb_no_green_pen, slide_num, 5, "No Green Pen", "rgb-no-green-pen")
+  print("Passed Filter 4")
 
   mask_no_blue_pen = filter_blue_pen(rgb)
   rgb_no_blue_pen = util.mask_rgb(rgb, mask_no_blue_pen)
   save_display(save, display, info, rgb_no_blue_pen, slide_num, 6, "No Blue Pen", "rgb-no-blue-pen")
+  print("Passed Filter 5")
 
-  mask_gray_green_pens = mask_not_gray & mask_not_green & mask_no_red_pen & mask_no_green_pen & mask_no_blue_pen
+  #mask_gray_green_pens = mask_not_gray & mask_not_green & mask_no_red_pen & mask_no_green_pen & mask_no_blue_pen
+  mask_gray_green_pens = mask_not_green & mask_no_red_pen & mask_no_green_pen & mask_no_blue_pen
   rgb_gray_green_pens = util.mask_rgb(rgb, mask_gray_green_pens)
   save_display(save, display, info, rgb_gray_green_pens, slide_num, 7, "Not Gray, Not Green, No Pens",
                "rgb-no-gray-no-green-no-pens")
+  print("Passed Filter 6")
 
+  '''
   mask_remove_small = filter_remove_small_objects(mask_gray_green_pens, min_size=500, output_type="bool")
   rgb_remove_small = util.mask_rgb(rgb, mask_remove_small)
   save_display(save, display, info, rgb_remove_small, slide_num, 8,
                "Not Gray, Not Green, No Pens,\nRemove Small Objects",
                "rgb-not-green-not-gray-no-pens-remove-small")
-
-  img = rgb_remove_small
+  print("Passed Filter 7")
+  '''
+  img = rgb_gray_green_pens
   return img
 
 
@@ -1355,8 +1369,9 @@ def apply_filters_to_image_range(start_ind, end_ind, save, display):
   """
   html_page_info = dict()
   for slide_num in range(start_ind, end_ind + 1):
-    _, info = apply_filters_to_image(slide_num, save=save, display=display)
-    html_page_info.update(info)
+     if(str(slide.get_training_slide_path(slide_num)) != "False"):
+      _, info = apply_filters_to_image(slide_num, save=save, display=display)
+      html_page_info.update(info)
   return start_ind, end_ind, html_page_info
 
 
@@ -1404,11 +1419,13 @@ def multiprocess_apply_filters_to_images(save=True, display=False, html=True, im
   # how many processes to use
   num_processes = multiprocessing.cpu_count()
   pool = multiprocessing.Pool(num_processes)
-
+  '''
   if image_num_list is not None:
     num_train_images = len(image_num_list)
   else:
     num_train_images = slide.get_num_training_slides()
+    '''
+  num_train_images = 1041
   if num_processes > num_train_images:
     num_processes = num_train_images
   images_per_process = num_train_images / num_processes
@@ -1440,7 +1457,7 @@ def multiprocess_apply_filters_to_images(save=True, display=False, html=True, im
       results.append(pool.apply_async(apply_filters_to_image_list, t))
     else:
       results.append(pool.apply_async(apply_filters_to_image_range, t))
-
+  '''
   html_page_info = dict()
   for result in results:
     if image_num_list is not None:
@@ -1457,12 +1474,13 @@ def multiprocess_apply_filters_to_images(save=True, display=False, html=True, im
 
   if html:
     generate_filter_html_result(html_page_info)
-
+  '''
   print("Time to apply filters to all images (multiprocess): %s\n" % str(timer.elapsed()))
 
-# if __name__ == "__main__":
-# slide.training_slide_to_image(2)
-# singleprocess_apply_filters_to_images(image_num_list=[2], display=True)
+if __name__ == "__main__":
+  # slide.training_slide_to_image(2)
+  # singleprocess_apply_filters_to_images(image_num_list=[2], display=True)
 
-# singleprocess_apply_filters_to_images()
-# multiprocess_apply_filters_to_images()
+  # singleprocess_apply_filters_to_images()
+  multiprocess_apply_filters_to_images()
+  #apply_filters_to_image_list([862], True, False)

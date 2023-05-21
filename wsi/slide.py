@@ -29,13 +29,15 @@ import re
 import sys
 import util
 from util import Time
+Image.MAX_IMAGE_PIXELS = None
 
 # GLOBAL VARIABLES AND PATHS
 DATA = "data"
+FONTS = "fonts"
 ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
 BASE_DIR = os.path.join(ROOT_DIR, DATA)
 
-# SUBDIR VARIABLES AND PATHS
+# SUBDIR, VARIABLES AND PATHS
 IMAGE = "image"
 SLIDE = "slide"
 THUMBNAIL = "THUMBNAIL"
@@ -56,24 +58,24 @@ GDC_TCGA_IMAGE_DIR = os.path.join(BASE_DIR, GDC_TCGA, IMAGE)
 UCH_CPDAI_IMAGE_DIR = os.path.join(BASE_DIR, UCH_CPDAI, IMAGE)
 GDC_TCGA_THUMBNAIL_DIR = os.path.join(BASE_DIR, GDC_TCGA, THUMBNAIL)
 
-FILTER_SUFFIX = ""  # Example: "filter-"
+FILTER_SUFFIX = "filter-"  # Example: "filter-"
 FILTER_RESULT_TEXT = "filtered"
-FILTER_DIR = os.path.join(BASE_DIR, "filter_" + JPG)
+FILTER_DIR = os.path.join(BASE_DIR, GDC_TCGA, "filter_" + JPG)
 FILTER_THUMBNAIL_DIR = os.path.join(BASE_DIR, "filter_thumbnail_" + JPG)
 FILTER_PAGINATION_SIZE = 50
 FILTER_PAGINATE = True
 FILTER_HTML_DIR = BASE_DIR
 
-TILE_SUMMARY_DIR = os.path.join(BASE_DIR, "tile_summary_" + JPG)
-TILE_SUMMARY_ON_ORIGINAL_DIR = os.path.join(BASE_DIR, "tile_summary_on_original_" + JPG)
+TILE_SUMMARY_DIR = os.path.join(BASE_DIR, GDC_TCGA, "tile_summary_" + JPG)
+TILE_SUMMARY_ON_ORIGINAL_DIR = os.path.join(BASE_DIR, GDC_TCGA, "tile_summary_on_original_" + JPG)
 TILE_SUMMARY_SUFFIX = "tile_summary"
-TILE_SUMMARY_THUMBNAIL_DIR = os.path.join(BASE_DIR, "tile_summary_thumbnail_" + JPG)
-TILE_SUMMARY_ON_ORIGINAL_THUMBNAIL_DIR = os.path.join(BASE_DIR, "tile_summary_on_original_thumbnail_" + JPG)
+TILE_SUMMARY_THUMBNAIL_DIR = os.path.join(BASE_DIR, GDC_TCGA, "tile_summary_thumbnail_" + JPG)
+TILE_SUMMARY_ON_ORIGINAL_THUMBNAIL_DIR = os.path.join(BASE_DIR, GDC_TCGA, "tile_summary_on_original_thumbnail_" + JPG)
 TILE_SUMMARY_PAGINATION_SIZE = 50
 TILE_SUMMARY_PAGINATE = True
 TILE_SUMMARY_HTML_DIR = BASE_DIR
 
-TILE_DATA_DIR = os.path.join(BASE_DIR, "tile_data")
+TILE_DATA_DIR = os.path.join(BASE_DIR, GDC_TCGA, "tile_data")
 TILE_DATA_SUFFIX = "tile_data"
 
 TOP_TILES_SUFFIX = "top_tile_summary"
@@ -87,6 +89,9 @@ TILE_DIR = os.path.join(BASE_DIR, "tiles_" + JPG)
 TILE_SUFFIX = "tile"
 
 STATS_DIR = os.path.join(BASE_DIR, "svs_stats")
+
+FONT_PATH = os.path.join(ROOT_DIR, FONTS, "Arial Bold.ttf")
+SUMMARY_TITLE_FONT_PATH = os.path.join(ROOT_DIR, FONTS, "Courier New Bold.ttf")
 
 
 def open_slide(filename):
@@ -106,7 +111,6 @@ def open_slide(filename):
   except FileNotFoundError:
     slide = None
   return slide
-
 
 def open_image(filename):
   """
@@ -683,10 +687,9 @@ def training_slide_to_image(slide_number):
   img.save(img_path)
 
   thumbnail_path = get_training_thumbnail_path(slide_number, large_w, large_h, new_w, new_h)
-  save_thumbnail(img, THUMBNAIL_SIZE, thumbnail_path)
+  save_thumbnail(img, THUMBNAIL_SIZE, thumbnail_path)  
 
-
-def slide_to_scaled_pil_image(slide_number):
+def slide_to_scaled_pil_image(slide_number, scale_factor=None):
   """
   Convert a WSI training slide to a scaled-down PIL image.
 
@@ -696,19 +699,61 @@ def slide_to_scaled_pil_image(slide_number):
   Returns:
     Tuple consisting of scaled-down PIL image, original width, original height, new width, and new height.
   """
+  
   slide_filepath = get_training_slide_path(slide_number)
-  #print("Opening Slide #%d: %s" % (slide_number, slide_filepath))
   print("Opening Slide #%s: %s" % (slide_number, slide_filepath))
   slide = open_slide(slide_filepath)
-  large_w, large_h = slide.dimensions
-  new_w = math.floor(large_w / SCALE_FACTOR)
-  new_h = math.floor(large_h / SCALE_FACTOR)
-  level = slide.get_best_level_for_downsample(SCALE_FACTOR)
-  whole_slide_image = slide.read_region((0, 0), level, slide.level_dimensions[level])
+  scale_factor, level = get_scale_down_level(scale_factor)
+  original_w, original_h = slide.dimensions
+  new_w = slide.level_dimensions[level][0]
+  new_h = slide.level_dimensions[level][1]
+  whole_slide_image = slide.read_region((0, 0), level, (new_w, new_h))
+  img = whole_slide_image.convert("RGB")
+  '''
   whole_slide_image = whole_slide_image.convert("RGB")
+  
   img = whole_slide_image.resize((new_w, new_h), Image.Resampling.BILINEAR)
-  return img, large_w, large_h, new_w, new_h
+  '''
+  return img, original_w, original_h, new_w, new_h
 
+def get_scale_down_level(scale_factor):
+  """
+    Get the level correspondent to the scale factor input (0, 1, 2 or 3) supported.
+
+  Args:
+    scale_factor: Scale factor value (40, 20, 10, 8).
+
+  Returns:
+    Tuple consisting of the scale factor input and the correspondent level.
+  """
+  supported_scales = [8, 10, 20, 40]
+
+  if(scale_factor not in supported_scales):
+    scale_factor = SCALE_FACTOR
+    level = map_scale_factor_to_level(scale_factor)
+
+  return scale_factor, level
+
+def map_scale_factor_to_level(scale_factor=None):
+  """
+    Get the level correspondent to the scale factor input (0, 1, 2 or 3) supported.
+
+  Args:
+    scale_factor: Scale factor value (40, 20, 10, 8). Scale factor 20 as default value and level 1 so on.
+
+  Returns:
+    Level correspondent to the scale factor input.
+  """
+  level = 1
+  if(scale_factor == 40):
+    level = 0
+  elif(scale_factor == 20):
+    level = 1
+  elif(scale_factor == 10):
+    level = 2
+  elif(scale_factor == 8):
+    level = 3
+  return level
 
 def slide_to_scaled_np_image(slide_number):
   """
@@ -778,7 +823,7 @@ def get_num_slides():
 
 
 def training_slide_range_to_images(start_ind, end_ind):
-  """
+  """  
   Convert a range of WSI training slides to smaller images (in a format such as jpg or png).
 
   Args:
@@ -1034,7 +1079,7 @@ def slide_info(display_all_properties=False):
     if display_all_properties:
       print("Properties:")
       for prop_key in slide.properties.keys():
-        print("  Property: " + str(prop_key) + ", value: " + str(slide.properties.get(prop_key)))
+        print("  Property: " + str(prop_key) + ", value: " + str(slide.properties.geGt(prop_key)))
 
   print("\n\nSlide Magnifications:")
   print("  20x Slides: " + str(obj_pow_20_list))
@@ -1059,6 +1104,7 @@ if __name__ == "__main__":
   # img = open_image(img_path)
   # img.show()
 
-  # slide_to_scaled_pil_image(5)[0].show()
+  #slide_to_scaled_pil_image(18)[0].show()
   # singleprocess_training_slides_to_images()
   multiprocess_training_slides_to_images()
+  #print(ROOT_DIR)
