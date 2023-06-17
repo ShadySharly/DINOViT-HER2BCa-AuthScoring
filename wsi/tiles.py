@@ -32,21 +32,23 @@ import filter
 import slide
 from util import Time
 
+# TILES AND TOP TILES GENERATION PARAMETERS
 TISSUE_HIGH_THRESH = 80
 TISSUE_LOW_THRESH = 10
-
-#ROW_TILE_SIZE = 1024
-#COL_TILE_SIZE = 1024
+SCORE_HIGH_THRESH = 0.8
+SCORE_LOW_THRESH = 0.2
+MIN_SCORE_THRESH = 0.70
+MIN_TISSUE_THRESH = 80
+NUM_TOP_TILES = 70
 ROW_TILE_SIZE = 256
 COL_TILE_SIZE = 256
-NUM_TOP_TILES = 70
-MIN_SCORE = 0.7
-MIN_TISSUE_PERCENTAGE = 70
+FILTER_BY_SCORE = True
+FILTER_BY_TISSUE_PERCENTAGE = False
 
-DISPLAY_TILE_SUMMARY_LABELS = False
+DISPLAY_TILE_SUMMARY_LABELS = True
 TILE_LABEL_TEXT_SIZE = 10
-LABEL_ALL_TILES_IN_TOP_TILE_SUMMARY = False
-BORDER_ALL_TILES_IN_TOP_TILE_SUMMARY = False
+LABEL_ALL_TILES_IN_TOP_TILE_SUMMARY = True
+BORDER_ALL_TILES_IN_TOP_TILE_SUMMARY = True
 
 TILE_BORDER_SIZE = 2  # The size of the colored rectangular border around summary tiles.
 
@@ -504,7 +506,7 @@ def save_top_tiles_on_original_image(pil_img, slide_num):
     "%-20s | Time: %-14s  Name: %s" % ("Save Top Orig Thumb", str(t.elapsed()), thumbnail_filepath))
 
 
-def summary_and_tiles(slide_num, display=True, save_summary=True, save_data=True, save_top_tiles=True):
+def summary_and_tiles(slide_num, display=False, save_summary=True, save_data=True, save_top_tiles=True):
   """
   Generate tile summary and top tiles for slide.
 
@@ -518,7 +520,6 @@ def summary_and_tiles(slide_num, display=True, save_summary=True, save_data=True
   """
   img_path = slide.get_filter_image_result(slide_num)
   np_img = slide.open_image_np(img_path) 
-  print("WEA SUMMARY")
   tile_sum = score_tiles(slide_num, np_img)
   
   if save_data:
@@ -622,12 +623,11 @@ def tile_to_np_tile(tile):
   np_img = util.pil_to_np_rgb(pil_img)
   return np_img
 
-
 def save_display_tile(tile, save=True, display=False):
   """
   Save and/or display a tile image.
 
-  Args:
+  Args:E
     tile: Tile object.
     save: If True, save tile image.
     display: If True, dispaly tile image.
@@ -645,7 +645,6 @@ def save_display_tile(tile, save=True, display=False):
 
   if display:
     tile_pil_img.show()
-
 
 def score_tiles(slide_num, np_img=None, dimensions=None, small_tile_in_tile=False):
   """
@@ -1849,6 +1848,20 @@ class TileSummary:
     sorted_list = sorted(self.tiles, key=lambda t: t.score, reverse=True)
     return sorted_list
   
+  def filter_tiles_by_score_and_tissue(self):
+    """
+    Retrieve the tiles ranked by score.
+
+    Returns:
+       List of the tiles ranked by score.
+    """
+    filtered_tiles = []
+    for tile in self.tiles:
+      if(tile.score >= MIN_SCORE_THRESH and tile.tissue_percentage >= MIN_TISSUE_THRESH):
+        filtered_tiles.append(tile)
+
+    return filtered_tiles
+
   def filter_tiles_by_tissue_percentage(self):
     """
     Retrieve the tiles ranked by score.
@@ -1859,7 +1872,7 @@ class TileSummary:
     filtered_tiles = []
     sorted_tiles = self.tiles_by_tissue_percentage()
     for tile in sorted_tiles:
-      if(tile.tissue_percentage >= TISSUE_HIGH_THRESH):
+      if(tile.tissue_percentage >= MIN_TISSUE_THRESH):
         filtered_tiles.append(tile)
 
     return filtered_tiles
@@ -1873,31 +1886,39 @@ class TileSummary:
     """
     filtered_tiles = []
     for tile in self.tiles:
-      if(tile.score >= MIN_SCORE):
+      if(tile.score >= MIN_SCORE_THRESH):
         filtered_tiles.append(tile)
 
     return filtered_tiles
 
-  def top_tiles(self, min_score=None, min_tissue_percentage=True):
+  def top_tiles(self):
     """
     Retrieve the top-scoring tiles.
 
     Returns:
        List of the top-scoring tiles.
     """
-    print("---------------------TILES-----------------------------")
-    if(min_score is True):
-      print("filter By Tile Tissue Percentage")
+    print("############################################# TILES #############################################")
+
+    if(FILTER_BY_SCORE is True and FILTER_BY_TISSUE_PERCENTAGE is True):
+      print("filter by Tile Score AND Tissue Percentage")
+      top_tiles = self.filter_tiles_by_score_and_tissue()
+      print(top_tiles)
+      return top_tiles
+
+    elif(FILTER_BY_SCORE is True):
+      print("filter by Tile Score")
       top_tiles = self.filter_tiles_by_score()
       print(top_tiles)
       return top_tiles
     
-    elif(min_tissue_percentage is True):
-      print("filter By Tile Score")
+    elif(FILTER_BY_TISSUE_PERCENTAGE is True):
+      print("filter by Tile Tissue Percentage")
       top_tiles = self.filter_tiles_by_tissue_percentage()
       print(top_tiles)
       return top_tiles
 
+    print("Filter by the top " + str(NUM_TOP_TILES) + " scored tiles")
     sorted_tiles = self.tiles_by_score()
     top_tiles = sorted_tiles[:NUM_TOP_TILES]
     return top_tiles
@@ -2034,5 +2055,5 @@ if __name__ == "__main__":
   # tile = dynamic_tile(2, 29, 16, True)
   # tile.display_with_histograms()
   # print("WEA  TILES")
-  singleprocess_filtered_images_to_tiles(image_num_list=[18])
+  singleprocess_filtered_images_to_tiles(image_num_list=[5018])
   # multiprocess_filtered_images_to_tiles()

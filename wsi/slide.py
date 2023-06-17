@@ -14,6 +14,7 @@
 #
 # ------------------------------------------------------------------------
 
+import cv2
 import shutil
 import glob
 import math
@@ -39,6 +40,7 @@ BASE_DIR = os.path.join(ROOT_DIR, DATA)
 
 # SUBDIR, VARIABLES AND PATHS
 IMAGE = "image"
+MULTI_IMAGE = "multi_sample_image"
 SLIDE = "slide"
 THUMBNAIL = "THUMBNAIL"
 GDC_TCGA = "GDC_TCGA"
@@ -54,9 +56,12 @@ SLIDE_PREFIX = "TCGA-"
 SLIDE_DIR = os.path.join(BASE_DIR, GDC_TCGA, SLIDE)
 SCALE_FACTOR = 20
 THUMBNAIL_SIZE = 300
+NUM_SLIDES = 1041
 GDC_TCGA_IMAGE_DIR = os.path.join(BASE_DIR, GDC_TCGA, IMAGE)
+GDC_TCGA_MULTI_IMAGE_DIR = os.path.join(BASE_DIR, GDC_TCGA, MULTI_IMAGE)
 UCH_CPDAI_IMAGE_DIR = os.path.join(BASE_DIR, UCH_CPDAI, IMAGE)
 GDC_TCGA_THUMBNAIL_DIR = os.path.join(BASE_DIR, GDC_TCGA, THUMBNAIL)
+IMG_CROPS_DIR = os.path.join(BASE_DIR, GDC_TCGA, "crops")
 
 FILTER_SUFFIX = "filter-"  # Example: "filter-"
 FILTER_RESULT_TEXT = "filtered"
@@ -93,6 +98,8 @@ STATS_DIR = os.path.join(BASE_DIR, "svs_stats")
 FONT_PATH = os.path.join(ROOT_DIR, FONTS, "Arial Bold.ttf")
 SUMMARY_TITLE_FONT_PATH = os.path.join(ROOT_DIR, FONTS, "Courier New Bold.ttf")
 
+CROP_RATIO = 10
+WHITENESS_TRESHOLD = 240
 
 def open_slide(filename):
   """
@@ -141,6 +148,156 @@ def open_image_np(filename):
   np_img = util.pil_to_np_rgb(pil_img)
   return np_img
 
+def get_last_image_number():
+  image_list = os.listdir(GDC_TCGA_IMAGE_DIR)
+  last_image_filepath = image_list[-1]
+  last_image_index = last_image_filepath.split("-")[1]
+  print("Last Image Index: " + str(last_image_index))
+  return int(last_image_index)
+
+def divide_multisample_images():
+
+   for root, dirs, files in os.walk(GDC_TCGA_IMAGE_DIR):
+    image_list = list(map(lambda file_name: os.path.join(root, file_name), files))
+    print(image_list)
+    list(map(lambda image_filepath: divide_image(image_filepath), image_list))
+
+def divide_image(image_filepath, samples_num=None):
+
+  img = open_image(image_filepath)
+  img_name = os.path.basename(image_filepath)
+
+  if (is_multisample_image(img, 2, 0)):
+    print("Two Vertical Samples")
+    save_samples(img, 2, 0)
+    new_image_filepath = os.path.join(GDC_TCGA_MULTI_IMAGE_DIR, img_name)
+    shutil.move(image_filepath, new_image_filepath)
+
+  elif (is_multisample_image(img, 2, 1)):
+    print("Two Horizontal Samples")
+    save_samples(img, 2, 1)
+    new_image_filepath = os.path.join(GDC_TCGA_MULTI_IMAGE_DIR, img_name)
+    shutil.move(image_filepath, new_image_filepath)
+
+  elif (is_multisample_image(img, 3, 0)):
+    print("Three Vertical Samples")
+    save_samples(img, 3, 0)
+    new_image_filepath = os.path.join(GDC_TCGA_MULTI_IMAGE_DIR, img_name)
+    shutil.move(image_filepath, new_image_filepath)
+
+  elif (is_multisample_image(img, 3, 1)):
+    print("Three Horizontal Samples")
+    save_samples(img, 3, 1)
+    new_image_filepath = os.path.join(GDC_TCGA_MULTI_IMAGE_DIR, img_name)
+    shutil.move(image_filepath, new_image_filepath)
+
+  else:
+      print("No Multi-Sample Image")
+
+def get_sample_path(img_width, img_height, sample_img):
+
+  sample_width, sample_height = sample_img.size
+
+  image_index = str(get_last_image_number() + 1).zfill(4)
+  sample_barcode = SLIDE_PREFIX + image_index
+  magnification = str(SCALE_FACTOR) + "x"
+  original_dim = str(img_width) + "x" + str(img_height)
+  sample_dim = str(sample_width) + "x" + str(sample_height)
+
+  sample_name = sample_barcode + "-" + magnification + "-" + original_dim + "-" + sample_dim + ".jpg"
+  sample_path = os.path.join(GDC_TCGA_IMAGE_DIR, sample_name)
+  print("Sample N° " + image_index + "Path: " + sample_path)
+  return sample_path
+
+def save_samples(img, samples_num, orientation):
+
+  width, height = img.size
+
+  if (samples_num == 2 and orientation == 0):
+    sample_width = width // 2
+    print("Sample Width: " + str(sample_width))
+    left_crop = img.crop((0, 0, sample_width, height))
+    right_crop = img.crop((sample_width + 1, 0, width, height))
+
+    left_crop.save(get_sample_path(width, height, left_crop))
+    right_crop.save(get_sample_path(width, height, right_crop))
+
+    print("Saved Two Vertical Samples")
+
+  elif (samples_num == 2 and orientation == 1):
+    sample_height = height // 2
+    print("Sample Height: " + str(sample_height))
+    upper_crop = img.crop((0, 0, width, sample_height))
+    lower_crop = img.crop((0, sample_height + 1, width, height))
+
+    upper_crop.save(get_sample_path(width, height, upper_crop))
+    lower_crop.save(get_sample_path(width, height, lower_crop))
+
+    print("Saved Two Horizontal Samples")
+
+  elif (samples_num == 3 and orientation == 0):
+    sample_width = width // 3
+    print("Sample Width: " + str(sample_width))
+    left_crop = img.crop((0, 0, sample_width, height))
+    center_crop = img.crop((sample_width + 1, 0, 2 * sample_width + 1, height))
+    right_crop = img.crop((2 * sample_width + 2, 0, width, height))
+
+    left_crop.save(get_sample_path(width, height, left_crop))
+    center_crop.save(get_sample_path(width, height, center_crop))
+    right_crop.save(get_sample_path(width, height, right_crop))
+
+    print("Saved Three Vertical Samples")
+
+  elif (samples_num == 3 and orientation == 1):
+    sample_height = height // 3
+    print("Sample Height: " + str(sample_height))
+    upper_crop = img.crop((0, 0, width, sample_height))
+    center_crop = img.crop((0, sample_height + 1, width, 2 * sample_height + 1))
+    lower_crop = img.crop((0, 2 * sample_height + 2, width, height))
+
+    upper_crop.save(get_sample_path(width, height, upper_crop))
+    center_crop.save(get_sample_path(width, height, center_crop))
+    lower_crop.save(get_sample_path(width, height, lower_crop))
+
+    print("Saved Three Horizontal Samples")
+
+def is_multisample_image(img, samples_num, orientation):
+  """
+  Check if the given file corresponds to a slide including two or more samples of itself.
+
+  Args:
+    display_all_properties: If True, display all available slide properties.
+
+  Returns:
+    True if it's multisample slide or false if not (just one sample in slide)
+  """
+  delimeter_crop = get_sample_delimiter_crop(img, samples_num, orientation)
+  pixel_crop_mean = np.mean(delimeter_crop)
+  print("Delimeter Crop Pixel Mean: " + str(pixel_crop_mean))
+  return pixel_crop_mean >= WHITENESS_TRESHOLD
+
+def get_sample_delimiter_crop(img, samples_num, orientation):
+  width, height = img.size
+  center_pixel_x = width / samples_num
+  center_pixel_y = height / samples_num
+
+  if (orientation == 0):
+    img_crop = get_vertical_crop(img, center_pixel_x, height)
+
+  elif (orientation == 1):
+    img_crop = get_horizontal_crop(img, center_pixel_y, width)
+    
+  np_crop = util.pil_to_np_rgb(img_crop)
+  return np_crop
+
+def get_vertical_crop(img, center_pixel, img_height):
+  img_crop = img.crop((center_pixel - CROP_RATIO, 0, center_pixel + CROP_RATIO, img_height))
+  return img_crop
+
+
+def get_horizontal_crop(img, center_pixel, img_width):
+  img_crop = img.crop((0, center_pixel - CROP_RATIO, img_width, center_pixel + CROP_RATIO))
+  return img_crop
 
 def get_training_slide_path(slide_number):
   """
@@ -161,9 +318,8 @@ def get_training_slide_path(slide_number):
   if(os.path.isfile(slide_filepath)):
     return slide_filepath
   
-  else:
-    print("No existing slide N°: " + str(slide_number))
-    return False
+  print("No existing slide N°: " + str(slide_number))
+  return False
 
 def get_tile_image_path(tile):
   """
@@ -225,8 +381,8 @@ def get_training_image_path(slide_number, large_w=None, large_h=None, small_w=No
   padded_sl_num = str(slide_number).zfill(4)
   if large_w is None and large_h is None and small_w is None and small_h is None:
     wildcard_path = os.path.join(GDC_TCGA_IMAGE_DIR, SLIDE_PREFIX + padded_sl_num + "*." + IMAGE_EXT)
-    print(wildcard_path)
     img_path = glob.glob(wildcard_path)[0]
+
   else:
     img_path = os.path.join(GDC_TCGA_IMAGE_DIR, SLIDE_PREFIX + padded_sl_num + "-" + str(
       SCALE_FACTOR) + "x-" + str(
@@ -808,7 +964,7 @@ def get_num_training_slides():
   Returns:
     The total number of WSI training slide images.
   """
-  num_training_slides = len(glob.glob1(GDC_TCGA_IMAGE_DIR, "*." + JPG))
+  num_training_slides = len(glob.glob1(SLIDE_DIR, "*." + SVS))
   return num_training_slides
 
 def get_num_slides():
@@ -834,8 +990,13 @@ def training_slide_range_to_images(start_ind, end_ind):
     The starting index and the ending index of the slides that were converted.
   """
   for slide_num in range(start_ind, end_ind + 1):
-    if(str(get_training_slide_path(slide_num)) != "False"):
+    slide_path = get_training_slide_path(slide_num)
+    image_path = get_training_image_path(slide_num)
+    print("Trying to convert slide N°: " + str(slide_num))
+
+    if(slide_path != False and not os.path.isfile(image_path)):
       training_slide_to_image(slide_num)
+
   return (start_ind, end_ind)
 
 
@@ -845,7 +1006,7 @@ def singleprocess_training_slides_to_images():
   """
   t = Time()
 
-  num_train_images = get_num_training_slides()
+  num_train_images = NUM_SLIDES
   training_slide_range_to_images(1, num_train_images)
 
   t.elapsed_display()
@@ -862,7 +1023,7 @@ def multiprocess_training_slides_to_images():
   num_processes = multiprocessing.cpu_count()
   pool = multiprocessing.Pool(num_processes)
 
-  num_train_images = 1041
+  num_train_images = NUM_SLIDES
 
   if num_processes > num_train_images:
     num_processes = num_train_images
@@ -1100,11 +1261,16 @@ if __name__ == "__main__":
   # slide_stats()
 
   # training_slide_to_image(4)
-  # img_path = get_training_image_path(4)
+  # img_path = get_training_image_path(18)
+  # print(str(os.path.isfile(img_path)))
   # img = open_image(img_path)
   # img.show()
 
   #slide_to_scaled_pil_image(18)[0].show()
   # singleprocess_training_slides_to_images()
-  multiprocess_training_slides_to_images()
+  # multiprocess_training_slides_to_images()
   #print(ROOT_DIR)
+  divide_multisample_images()
+  #image_filepath = get_training_image_path(1017)
+  #divide_image(image_filepath)
+  #get_last_image_number()

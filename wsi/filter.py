@@ -1457,7 +1457,7 @@ def multiprocess_apply_filters_to_images(save=True, display=False, html=True, im
       results.append(pool.apply_async(apply_filters_to_image_list, t))
     else:
       results.append(pool.apply_async(apply_filters_to_image_range, t))
-  '''
+
   html_page_info = dict()
   for result in results:
     if image_num_list is not None:
@@ -1474,7 +1474,7 @@ def multiprocess_apply_filters_to_images(save=True, display=False, html=True, im
 
   if html:
     generate_filter_html_result(html_page_info)
-  '''
+    
   print("Time to apply filters to all images (multiprocess): %s\n" % str(timer.elapsed()))
 
 if __name__ == "__main__":
@@ -1482,5 +1482,5 @@ if __name__ == "__main__":
   # singleprocess_apply_filters_to_images(image_num_list=[2], display=True)
 
   # singleprocess_apply_filters_to_images()
-  multiprocess_apply_filters_to_images()
-  #apply_filters_to_image_list([862], True, False)
+  #multiprocess_apply_filters_to_images()
+  apply_filters_to_image_list([5018], True, False)

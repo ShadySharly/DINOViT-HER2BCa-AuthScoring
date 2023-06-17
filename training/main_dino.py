@@ -31,8 +31,41 @@ from torchvision import datasets, transforms
 from torchvision import models as torchvision_models
 
 import utils
+import part_utils
 import vision_transformer as vits
 from vision_transformer import DINOHead
+
+DATA = "data"
+TRAININNG = "training"
+ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
+BASE_DIR = os.path.join(ROOT_DIR, DATA)
+
+# SUBDIR, VARIABLES AND PATHS
+IMAGE = "image"
+MULTI_IMAGE = "multi_sample_image"
+SLIDE = "slide"
+THUMBNAIL = "THUMBNAIL"
+GDC_TCGA = "GDC_TCGA"
+UCH_CPDAI = "UCH_CPDAI"
+TILES = "tiles_jpg"
+SVS = "svs"
+JPG = "jpg"
+PNG = "png"
+TXT = "txt"
+CSV = "csv"
+
+IMAGE_EXT = JPG
+SLIDE_PREFIX = "TCGA-"
+SLIDE_DIR = os.path.join(BASE_DIR, GDC_TCGA, SLIDE)
+SCALE_FACTOR = 20
+THUMBNAIL_SIZE = 300
+NUM_SLIDES = 1041
+GDC_TCGA_IMAGE_DIR = os.path.join(BASE_DIR, GDC_TCGA, IMAGE)
+GDC_TCGA_MULTI_IMAGE_DIR = os.path.join(BASE_DIR, GDC_TCGA, MULTI_IMAGE)
+UCH_CPDAI_IMAGE_DIR = os.path.join(BASE_DIR, UCH_CPDAI, IMAGE)
+GDC_TCGA_THUMBNAIL_DIR = os.path.join(BASE_DIR, GDC_TCGA, THUMBNAIL)
+IMG_CROPS_DIR = os.path.join(BASE_DIR, GDC_TCGA, "crops")
+TILES_DIR = os.path.join(BASE_DIR, TILES)
 
 
 torchvision_archs = sorted(name for name in torchvision_models.__dict__
@@ -118,7 +151,7 @@ def get_args_parser():
         Used for small local view cropping of multi-crop.""")
 
     # Misc
-    parser.add_argument('--data_path', default='/path/to/imagenet/train/', type=str,
+    parser.add_argument('--data_path', default=TILES_DIR, type=str,
         help='Please specify path to the ImageNet training data.')
     parser.add_argument('--output_dir', default=".", type=str, help='Path to save logs and checkpoints.')
     parser.add_argument('--saveckp_freq', default=20, type=int, help='Save checkpoint every x epochs.')
@@ -467,10 +500,10 @@ class DataAugmentationDINO(object):
 
 if __name__ == '__main__':
     print("HOLA\n")
-    #parser = argparse.ArgumentParser('DINO', parents=[get_args_parser()])
-    #args = parser.parse_args()
-    #print(args)
-    #Path(args.output_dir).mkdir(parents=True, exist_ok=True)
-    #train_dino(args)
-    #partitions = part_utils.createPartitions()
-    #part_utils.createPartitionsCSV(partitions)
+    parser = argparse.ArgumentParser('DINO', parents=[get_args_parser()])
+    args = parser.parse_args()
+    print(args)
+    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+    train_dino(args)
+    partitions = part_utils.createPartitions()
+    part_utils.createPartitionsCSV(partitions)
