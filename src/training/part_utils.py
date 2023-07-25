@@ -99,3 +99,6 @@ def createPartitionsCSV(partitions):
 
                 setID = "evaluation"
             partID+=1
+
+if __name__ == '__main__':
+    print("part_utils")
