@@ -14,6 +14,9 @@
 #
 # ------------------------------------------------------------------------
 
+import sys
+sys.path.insert(0, '..')
+
 import math
 import multiprocessing
 import numpy as np
@@ -26,11 +29,10 @@ import skimage.filters as sk_filters
 import skimage.future as sk_future
 import skimage.morphology as sk_morphology
 import skimage.segmentation as sk_segmentation
-
 import slide
 import util
 from util import Time
-
+from metadata import *
 
 def filter_rgb_to_grayscale(np_img, output_type="uint8"):
   """
@@ -1039,12 +1041,12 @@ def apply_image_filters(np_img, slide_num=None, info=None, save=False, display=F
     Resulting filtered image as a NumPy array.
   """
   rgb = np_img
-  save_display(save, display, info, rgb, slide_num, 1, "Original", "rgb")
+  #save_display(save, display, info, rgb, slide_num, 1, "Original", "rgb")
   
   mask_not_green = filter_green_channel(rgb)
-  rgb_not_green = util.mask_rgb(rgb, mask_not_green)
-  save_display(save, display, info, rgb_not_green, slide_num, 2, "Not Green", "rgb-not-green")
-  print("Passed Filter 1")
+  #rgb_not_green = util.mask_rgb(rgb, mask_not_green)
+  #save_display(save, display, info, rgb_not_green, slide_num, 2, "Not Green", "rgb-not-green")
+  #print("Slide " + str(slide_num) + " Passed Filter 1")
   '''
   mask_not_gray = filter_grays(rgb)
   rgb_not_gray = util.mask_rgb(rgb, mask_not_gray)
@@ -1052,26 +1054,26 @@ def apply_image_filters(np_img, slide_num=None, info=None, save=False, display=F
   print("Passed Filter 2")
   '''
   mask_no_red_pen = filter_red_pen(rgb)
-  rgb_no_red_pen = util.mask_rgb(rgb, mask_no_red_pen)
-  save_display(save, display, info, rgb_no_red_pen, slide_num, 4, "No Red Pen", "rgb-no-red-pen")
-  print("Passed Filter 3")
+  #rgb_no_red_pen = util.mask_rgb(rgb, mask_no_red_pen)
+  #save_display(save, display, info, rgb_no_red_pen, slide_num, 4, "No Red Pen", "rgb-no-red-pen")
+  print("Slide " + str(slide_num) + " Passed Filter RED")
 
   mask_no_green_pen = filter_green_pen(rgb)
-  rgb_no_green_pen = util.mask_rgb(rgb, mask_no_green_pen)
-  save_display(save, display, info, rgb_no_green_pen, slide_num, 5, "No Green Pen", "rgb-no-green-pen")
-  print("Passed Filter 4")
+  #rgb_no_green_pen = util.mask_rgb(rgb, mask_no_green_pen)
+  #save_display(save, display, info, rgb_no_green_pen, slide_num, 5, "No Green Pen", "rgb-no-green-pen")
+  print("Slide " + str(slide_num) + " Passed Filter GREEN")
 
   mask_no_blue_pen = filter_blue_pen(rgb)
-  rgb_no_blue_pen = util.mask_rgb(rgb, mask_no_blue_pen)
-  save_display(save, display, info, rgb_no_blue_pen, slide_num, 6, "No Blue Pen", "rgb-no-blue-pen")
-  print("Passed Filter 5")
+  #rgb_no_blue_pen = util.mask_rgb(rgb, mask_no_blue_pen)
+  #save_display(save, display, info, rgb_no_blue_pen, slide_num, 6, "No Blue Pen", "rgb-no-blue-pen")
+  print("Slide " + str(slide_num) + " Passed FilterBLUE")
 
   #mask_gray_green_pens = mask_not_gray & mask_not_green & mask_no_red_pen & mask_no_green_pen & mask_no_blue_pen
   mask_gray_green_pens = mask_not_green & mask_no_red_pen & mask_no_green_pen & mask_no_blue_pen
   rgb_gray_green_pens = util.mask_rgb(rgb, mask_gray_green_pens)
-  save_display(save, display, info, rgb_gray_green_pens, slide_num, 7, "Not Gray, Not Green, No Pens",
-               "rgb-no-gray-no-green-no-pens")
-  print("Passed Filter 6")
+  #save_display(save, display, info, rgb_gray_green_pens, slide_num, 7, "Not Gray, Not Green, No Pens",
+  #             "rgb-no-gray-no-green-no-pens")
+  print("Slide " + str(slide_num) + " Passed ALL FILTERS")
 
   '''
   mask_remove_small = filter_remove_small_objects(mask_gray_green_pens, min_size=500, output_type="bool")
@@ -1101,13 +1103,11 @@ def apply_filters_to_image(slide_num, save=True, display=False):
   t = Time()
   print("Processing slide #%d" % slide_num)
 
-  info = dict()
-
-  if save and not os.path.exists(slide.FILTER_DIR):
-    os.makedirs(slide.FILTER_DIR)
+  if save and not os.path.exists(FILTER_IMAGE_DIR):
+    os.makedirs(FILTER_IMAGE_DIR)
   img_path = slide.get_training_image_path(slide_num)
   np_orig = slide.open_image_np(img_path)
-  filtered_np_img = apply_image_filters(np_orig, slide_num, info, save=save, display=display)
+  filtered_np_img = apply_image_filters(np_orig, slide_num, save=save, display=display)
 
   if save:
     t1 = Time()
@@ -1118,12 +1118,11 @@ def apply_filters_to_image(slide_num, save=True, display=False):
 
     t1 = Time()
     thumbnail_path = slide.get_filter_thumbnail_result(slide_num)
-    slide.save_thumbnail(pil_img, slide.THUMBNAIL_SIZE, thumbnail_path)
+    slide.save_thumbnail(pil_img, THUMBNAIL_SIZE, thumbnail_path)
     print("%-20s | Time: %-14s  Name: %s" % ("Save Thumbnail", str(t1.elapsed()), thumbnail_path))
 
+  print("Done filtering slide %d" % slide_num)
   print("Slide #%03d processing time: %s\n" % (slide_num, str(t.elapsed())))
-
-  return filtered_np_img, info
 
 
 def save_display(save, display, info, np_img, slide_num, filter_num, display_text, file_text,
@@ -1346,12 +1345,8 @@ def apply_filters_to_image_list(image_num_list, save, display):
   Returns:
     Tuple consisting of 1) a list of image numbers, and 2) a dictionary of image filter information.
   """
-  html_page_info = dict()
   for slide_num in image_num_list:
-    _, info = apply_filters_to_image(slide_num, save=save, display=display)
-    html_page_info.update(info)
-  return image_num_list, html_page_info
-
+    apply_filters_to_image(slide_num, save=save, display=display)
 
 def apply_filters_to_image_range(start_ind, end_ind, save, display):
   """
@@ -1367,15 +1362,14 @@ def apply_filters_to_image_range(start_ind, end_ind, save, display):
     Tuple consisting of 1) staring index of slides converted to images, 2) ending index of slides converted to images,
     and 3) a dictionary of image filter information.
   """
-  html_page_info = dict()
-  for slide_num in range(start_ind, end_ind + 1):
-     if(str(slide.get_training_slide_path(slide_num)) != "False"):
-      _, info = apply_filters_to_image(slide_num, save=save, display=display)
-      html_page_info.update(info)
-  return start_ind, end_ind, html_page_info
+  for image_dir_ind in range(start_ind, end_ind + 1):
+    image_name = os.listdir(GDC_TCGA_IMAGE_DIR)[image_dir_ind]
+    image_num = slide.get_image_index(image_name)
 
+    if(str(slide.get_training_image_path(image_num)) != "False"):
+      apply_filters_to_image(image_num, save=save, display=display)
 
-def singleprocess_apply_filters_to_images(save=True, display=False, html=True, image_num_list=None):
+def singleprocess_apply_filters_to_images(save=True, display=False, html=False, image_num_list=None, start_ind=None):
   """
   Apply a set of filters to training images and optionally save and/or display the filtered images.
 
@@ -1388,19 +1382,34 @@ def singleprocess_apply_filters_to_images(save=True, display=False, html=True, i
   t = Time()
   print("Applying filters to images\n")
 
+  image_num = util.get_dir_size(GDC_TCGA_IMAGE_DIR)
+  end_ind = start_ind + IMAGE_BATCH
+
   if image_num_list is not None:
-    _, info = apply_filters_to_image_list(image_num_list, save, display)
+    num_train_images = len(image_num_list)
+
+  elif start_ind is None:
+    start_ind = 0
+    num_train_images = image_num
+
+  elif end_ind > image_num:
+    end_ind = start_ind + IMAGE_BATCH
+    rest = end_ind % image_num
+    num_train_images = IMAGE_BATCH - rest
+
   else:
-    num_training_slides = slide.get_num_training_slides()
-    (s, e, info) = apply_filters_to_image_range(1, num_training_slides, save, display)
+    num_train_images = IMAGE_BATCH
+
+  print("N° Training images to filter: %d" % num_train_images)
+
+  if image_num_list is not None:
+    apply_filters_to_image_list(image_num_list, save, display)
+  else:
+    apply_filters_to_image_range(start_ind, num_train_images, save, display)
 
   print("Time to apply filters to all images: %s\n" % str(t.elapsed()))
 
-  if html:
-    generate_filter_html_result(info)
-
-
-def multiprocess_apply_filters_to_images(save=True, display=False, html=True, image_num_list=None):
+def multiprocess_apply_filters_to_images(save=True, display=False, html=False, image_num_list=None, start_ind=None):
   """
   Apply a set of filters to all training images using multiple processes (one process per core).
 
@@ -1413,19 +1422,33 @@ def multiprocess_apply_filters_to_images(save=True, display=False, html=True, im
   timer = Time()
   print("Applying filters to images (multiprocess)\n")
 
-  if save and not os.path.exists(slide.FILTER_DIR):
-    os.makedirs(slide.FILTER_DIR)
+  if save and not os.path.exists(FILTER_IMAGE_DIR):
+    os.makedirs(FILTER_IMAGE_DIR)
 
   # how many processes to use
-  num_processes = multiprocessing.cpu_count()
+  num_processes = CPU_COUNT
   pool = multiprocessing.Pool(num_processes)
-  '''
+
+  image_num = util.get_dir_size(GDC_TCGA_IMAGE_DIR)
+  end_ind = start_ind + IMAGE_BATCH
+
   if image_num_list is not None:
     num_train_images = len(image_num_list)
+
+  elif start_ind is None:
+    start_ind = 0
+    num_train_images = image_num
+
+  elif end_ind > image_num:
+    end_ind = start_ind + IMAGE_BATCH
+    rest = end_ind % image_num
+    num_train_images = IMAGE_BATCH - rest
+
   else:
-    num_train_images = slide.get_num_training_slides()
-    '''
-  num_train_images = 1041
+    num_train_images = IMAGE_BATCH
+
+  print("N° Images to Filter: %d" % num_train_images)
+
   if num_processes > num_train_images:
     num_processes = num_train_images
   images_per_process = num_train_images / num_processes
@@ -1458,29 +1481,14 @@ def multiprocess_apply_filters_to_images(save=True, display=False, html=True, im
     else:
       results.append(pool.apply_async(apply_filters_to_image_range, t))
 
-  html_page_info = dict()
   for result in results:
-    if image_num_list is not None:
-      (image_nums, html_page_info_res) = result.get()
-      html_page_info.update(html_page_info_res)
-      print("Done filtering slides: %s" % image_nums)
-    else:
-      (start_ind, end_ind, html_page_info_res) = result.get()
-      html_page_info.update(html_page_info_res)
-      if (start_ind == end_ind):
-        print("Done filtering slide %d" % start_ind)
-      else:
-        print("Done filtering slides %d through %d" % (start_ind, end_ind))
-
-  if html:
-    generate_filter_html_result(html_page_info)
+    result.get()
     
   print("Time to apply filters to all images (multiprocess): %s\n" % str(timer.elapsed()))
 
 if __name__ == "__main__":
   # slide.training_slide_to_image(2)
   # singleprocess_apply_filters_to_images(image_num_list=[2], display=True)
-
-  # singleprocess_apply_filters_to_images()
-  #multiprocess_apply_filters_to_images()
-  apply_filters_to_image_list([5018], True, False)
+  singleprocess_apply_filters_to_images()
+  #multiprocess_apply_filters_to_images(start_ind=0)
+  #apply_filters_to_image_list([1464], True, False)

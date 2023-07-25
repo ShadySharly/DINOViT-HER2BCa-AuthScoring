@@ -14,6 +14,9 @@
 #
 # ------------------------------------------------------------------------
 
+import sys
+sys.path.insert(0, '..')
+
 import os
 import glob
 import shutil
@@ -24,36 +27,10 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
+from metadata import *
 
 # If True, display additional NumPy array stats (min, max, mean, is_binary).
 ADDITIONAL_NP_STATS = False
-DATA = "data"
-SLIDE = "slide"
-MANIFEST = "manifest"
-IMAGE = "image"
-TXT = "txt"
-SVS = "svs"
-DOT = "."
-GDC_TCGA = "GDC_TCGA"
-
-# GENERAL PATHS
-ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
-BASE_DIR = os.path.join(ROOT_DIR, DATA)
-SLIDE_DIR = os.path.join(BASE_DIR, GDC_TCGA, SLIDE)
-MANIFEST_DIR = os.path.join(BASE_DIR, GDC_TCGA, MANIFEST)
-IMAGE_DIR = os.path.join(BASE_DIR, GDC_TCGA, IMAGE)
-
-
-# GDC_TCGA PATHS
-GDC_TCGA_DATA_DIR = os.path.join(BASE_DIR, GDC_TCGA)
-GDC_TCGA_EVAL_DIR = os.path.join(GDC_TCGA_DATA_DIR, "evaluation")
-GDC_TCGA_TRAIN_DIR = os.path.join(GDC_TCGA_DATA_DIR, "training")
-GDC_TCGA_MANIFEST_DIR = os.path.join(GDC_TCGA_DATA_DIR, "manifest")
-GDC_TCGA_SLIDE_DIR = os.path.join(GDC_TCGA_DATA_DIR, "slide")
-
-# UCH_CPDAI PATHS
-UCH_CPDAI_DATA_DIR = os.path.join(BASE_DIR, "UCH_CPDAI")
-
 
 def pil_to_np_rgb(pil_img):
   """
@@ -207,9 +184,9 @@ def filter_manifest():
   Returns:
     NumPy array representing an RGB image with mask applied.
   """
-  brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
-  manifest_file = open(GDC_TCGA_MANIFEST_DIR + "/gdc_manifest_3111.txt", "r")
-  filtered_manifest_file = open(GDC_TCGA_MANIFEST_DIR + "/gdc_manifest_general.txt", "w")
+  brca_file = pd.read_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
+  manifest_file = open(MANIFEST_DIR + "/gdc_manifest_3111.txt", "r")
+  filtered_manifest_file = open(MANIFEST_DIR + "/gdc_manifest_general.txt", "w")
   patient_barcodes = brca_file['slide_name'].tolist()
   filtered_manifest_file.write(manifest_file.readline())
   manifest_list = manifest_file.readlines()
@@ -233,11 +210,11 @@ def add_slide_barcode():
   Returns:
     NumPy array representing an RGB image with mask applied.
   """
-  brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
+  brca_file = pd.read_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
   slide_name_list = brca_file['slide_name'].to_list()
   barcode_name_list = list(map(lambda name: extract_patient_barcode(name), slide_name_list))
   brca_file['slide_barcode'] = barcode_name_list
-  brca_file.to_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Paper.csv", index=False, sep=";")
+  brca_file.to_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", index=False, sep=";")
 
 def rename_slide_dataset():
   """
@@ -250,7 +227,7 @@ def rename_slide_dataset():
   Returns:
     NumPy array representing an RGB image with mask applied.
   """
-  wsi_name_list = os.listdir(GDC_TCGA_SLIDE_DIR)
+  wsi_name_list = os.listdir(SLIDE_DIR)
   list(map(lambda wsi_name : rename_slide(wsi_name), wsi_name_list))
 
 def rename_slide(slide_name):
@@ -267,12 +244,12 @@ def rename_slide(slide_name):
 
   if(is_slide_name(slide_name)):
 
-    brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
+    brca_file = pd.read_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
     slide_row = brca_file.loc[brca_file['slide_name'] == os.path.splitext(slide_name)[0]]
     slide_id = slide_row.iloc[0]['slide_id']
 
-    src_name = GDC_TCGA_SLIDE_DIR + "/" + slide_name
-    dest_name = GDC_TCGA_SLIDE_DIR + "/" + slide_id + ".svs"
+    src_name = SLIDE_DIR + "/" + slide_name
+    dest_name = SLIDE_DIR + "/" + slide_id + ".svs"
 
     os.rename(src_name, dest_name)
     print(src_name + " TO " + dest_name)
@@ -308,7 +285,7 @@ def move_manifests_to_slides():
     
 def move_single_slide(src_path):
   slide_name = os.path.basename(src_path)
-  dest_path = os.path.join(GDC_TCGA_SLIDE_DIR, slide_name)
+  dest_path = os.path.join(SLIDE_DIR, slide_name)
 
   if(os.path.isfile(dest_path) == False):
     shutil.move(src_path, dest_path)
@@ -366,7 +343,7 @@ def get_slide_name(slide_id=None, slide_barcode=None):
   Returns:
     NumPy array representing an RGB image with mask applied.
   """
-  brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
+  brca_file = pd.read_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
   if(slide_id != None):
     slide_row = brca_file.loc[brca_file['slide_id'] == slide_id]
 
@@ -375,6 +352,27 @@ def get_slide_name(slide_id=None, slide_barcode=None):
 
   slide_name = slide_row.iloc[0]['slide_name']
   return slide_name
+
+def get_slide_barcode(slide_id=None, slide_name=None):
+  """
+  Apply a binary (T/F, 1/0) mask to a 3-channel RGB image and output the result.
+
+  Args:
+    rgb: RGB image as a NumPy array.
+    mask: An image mask to determine which pixels in the original image should be displayed.
+
+  Returns:
+    NumPy array representing an RGB image with mask applied.
+  """
+  brca_file = pd.read_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
+  if(slide_id != None):
+    slide_row = brca_file.loc[brca_file['slide_id'] == slide_id]
+
+  elif(slide_name != None):
+    slide_row = brca_file.loc[brca_file['slide_name'] == slide_name]
+
+  slide_barcode = slide_row.iloc[0]['slide_barcode']
+  return slide_barcode
 
 def is_slide_in_manifest(manifest_id, slide_id=None, slide_barcode=None, slide_name=None):
   """
@@ -388,7 +386,7 @@ def is_slide_in_manifest(manifest_id, slide_id=None, slide_barcode=None, slide_n
     NumPy array representing an RGB image with mask applied.
   """
   manifest_file_name = "gdc_manifest_100_" + str(manifest_id) + DOT + TXT
-  manifest_path = os.path.join(GDC_TCGA_MANIFEST_DIR, manifest_file_name)
+  manifest_path = os.path.join(MANIFEST_DIR, manifest_file_name)
   manifest_file = open(manifest_path, "r")
   header = manifest_file.readline()
   manifest_row_list = manifest_file.readlines()
@@ -415,7 +413,7 @@ def is_slide_id(file_name):
   Returns:
     NumPy array representing an RGB image with mask applied.
   """
-  brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
+  brca_file = pd.read_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
   slide_id_list = brca_file['slide_id'].tolist()
   
   return os.path.splitext(file_name)[0] in slide_id_list
@@ -431,7 +429,7 @@ def is_slide_name(file_name):
   Returns:
     NumPy array representing an RGB image with mask applied.
   """
-  brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
+  brca_file = pd.read_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
   slide_name_list = brca_file['slide_name'].tolist()
   
   return os.path.splitext(file_name)[0] in slide_name_list
@@ -447,7 +445,7 @@ def is_slide_barcode(file_name):
   Returns:
     NumPy array representing an RGB image with mask applied.
   """
-  brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
+  brca_file = pd.read_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
   slide_barcode_list = brca_file['slide_barcode'].tolist()
   
   return os.path.splitext(file_name)[0] in slide_barcode_list
@@ -463,7 +461,7 @@ def get_status_slides_downloads(manifest_id, file_dir):
   Returns:
     NumPy array representing an RGB image with mask applied.
   """
-  brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
+  brca_file = pd.read_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
   slide_name_list = brca_file['slide_name'].to_list()
   success_download_list = os.listdir(file_dir)
   success_download_list = list(map(lambda file_name: get_slide_id_from_file_name(file_name), success_download_list))
@@ -495,7 +493,7 @@ def get_not_in_manifest_slides(manifest_id, file_dir):
   Returns:
     NumPy array representing an RGB image with mask applied.
   """
-  brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
+  brca_file = pd.read_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
   slide_name_list = brca_file['slide_name'].to_list()
   file_name_list = os.listdir(file_dir)
   file_name_list = list(map(lambda file_name: get_slide_id_from_file_name(file_name), file_name_list))
@@ -544,20 +542,34 @@ def check_slide_downloads(file_path):
   Returns:
     NumPy array representing an RGB image with mask applied.
   """
-  brca_file = pd.read_csv(GDC_TCGA_DATA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
+  brca_file = pd.read_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
   status_list = brca_file['status'].tolist()
   print(status_list)
   successful_list = os.listdir(file_path)
   successful_list = list(map(lambda file_name: os.path.splitext(file_name)[0], successful_list))
 
-def show_list(list):
-  list(map(lambda name: print(name), list))
-  
+def add_image_data_row(slide_id=None, slide_barcode=None, slide_name=None, slide_id_origin=None):
+  brca_file = pd.read_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
+  brca_file.loc[len(brca_file)] = [slide_id, slide_barcode, slide_name, slide_id_origin]
+  brca_file.to_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", index=False, sep=";")
+
+def get_dir_size(dir):
+  """
+  FunctionDescription
+
+  Args:
+  arg: Argument description
+
+  returns:
+  Returns description
+  """
+  file_list = os.listdir(dir)
+  return len(file_list)
 
 if __name__ == "__main__":
 
-  #manifest_csv = txt_to_csv(GDC_TCGA_MANIFEST_DIR + "/gdc_manifest_3111.txt", GDC_TCGA_MANIFEST_DIR)
-  #csv_to_txt(GDC_TCGA_MANIFEST_DIR + "/gdc_manifest_3111.csv", GDC_TCGA_MANIFEST_DIR)
+  #manifest_csv = txt_to_csv(MANIFEST_DIR + "/gdc_manifest_3111.txt", MANIFEST_DIR)
+  #csv_to_txt(MANIFEST_DIR + "/gdc_manifest_3111.csv", MANIFEST_DIR)
   #filter_manifest()
   #rename_dataset()
   #rename_wsi()
@@ -565,13 +577,14 @@ if __name__ == "__main__":
   #rename_wsi_dataset()
   #set_slide_id_to_barcode()
   #filter_manifest()
-  move_manifests_to_slides()
-  rename_slide_dataset()
+  #move_manifests_to_slides()
+  #rename_slide_dataset()
   #get_status_slides_downloads(10, IMAGE_DIR)
   #get_status_slides_downloads(9, IMAGE_DIR)
   #ver = is_slide_id("TCGA-0019")
   #print(str(ver))
   #svs_files = get_svs_files_from_dir(MANIFEST_DIR)
   #print(svs_files)
+  add_image_data_row()
 
 

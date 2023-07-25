@@ -14,7 +14,9 @@
 #
 # ------------------------------------------------------------------------
 
-import cv2
+import sys
+sys.path.insert(0, '..')
+
 import shutil
 import glob
 import math
@@ -27,78 +29,12 @@ import os
 import PIL
 from PIL import Image
 import re
-import sys
 import util
 from util import Time
+from functools import reduce
+from metadata import *
+
 Image.MAX_IMAGE_PIXELS = None
-
-# GLOBAL VARIABLES AND PATHS
-DATA = "data"
-FONTS = "fonts"
-ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
-BASE_DIR = os.path.join(ROOT_DIR, DATA)
-
-# SUBDIR, VARIABLES AND PATHS
-IMAGE = "image"
-IMAGE_MULTI = "image_multi"
-SLIDE = "slide"
-THUMBNAIL = "THUMBNAIL"
-GDC_TCGA = "GDC_TCGA"
-UCH_CPDAI = "UCH_CPDAI"
-SVS = "svs"
-JPG = "jpg"
-PNG = "png"
-TXT = "txt"
-CSV = "csv"
-
-IMAGE_EXT = JPG
-SLIDE_PREFIX = "TCGA-"
-SLIDE_DIR = os.path.join(BASE_DIR, GDC_TCGA, SLIDE)
-SCALE_FACTOR = 20
-THUMBNAIL_SIZE = 300
-NUM_SLIDES = 1041
-GDC_TCGA_IMAGE_DIR = os.path.join(BASE_DIR, GDC_TCGA, IMAGE)
-GDC_TCGA_MULTI_IMAGE_DIR = os.path.join(BASE_DIR, GDC_TCGA, IMAGE_MULTI)
-UCH_CPDAI_IMAGE_DIR = os.path.join(BASE_DIR, UCH_CPDAI, IMAGE)
-GDC_TCGA_THUMBNAIL_DIR = os.path.join(BASE_DIR, GDC_TCGA, THUMBNAIL)
-
-FILTER_SUFFIX = "filter-"  # Example: "filter-"
-FILTER_RESULT_TEXT = "filtered"
-FILTER_DIR = os.path.join(BASE_DIR, GDC_TCGA, "filter_" + JPG)
-FILTER_THUMBNAIL_DIR = os.path.join(BASE_DIR, "filter_thumbnail_" + JPG)
-FILTER_PAGINATION_SIZE = 50
-FILTER_PAGINATE = True
-FILTER_HTML_DIR = BASE_DIR
-
-TILE_SUMMARY_DIR = os.path.join(BASE_DIR, GDC_TCGA, "tile_summary_" + JPG)
-TILE_SUMMARY_ON_ORIGINAL_DIR = os.path.join(BASE_DIR, GDC_TCGA, "tile_summary_on_original_" + JPG)
-TILE_SUMMARY_SUFFIX = "tile_summary"
-TILE_SUMMARY_THUMBNAIL_DIR = os.path.join(BASE_DIR, GDC_TCGA, "tile_summary_thumbnail_" + JPG)
-TILE_SUMMARY_ON_ORIGINAL_THUMBNAIL_DIR = os.path.join(BASE_DIR, GDC_TCGA, "tile_summary_on_original_thumbnail_" + JPG)
-TILE_SUMMARY_PAGINATION_SIZE = 50
-TILE_SUMMARY_PAGINATE = True
-TILE_SUMMARY_HTML_DIR = BASE_DIR
-
-TILE_DATA_DIR = os.path.join(BASE_DIR, GDC_TCGA, "tile_data")
-TILE_DATA_SUFFIX = "tile_data"
-
-TOP_TILES_SUFFIX = "top_tile_summary"
-TOP_TILES_DIR = os.path.join(BASE_DIR, TOP_TILES_SUFFIX + "_" + JPG)
-TOP_TILES_THUMBNAIL_DIR = os.path.join(BASE_DIR, TOP_TILES_SUFFIX + "_thumbnail_" + JPG)
-TOP_TILES_ON_ORIGINAL_DIR = os.path.join(BASE_DIR, TOP_TILES_SUFFIX + "_on_original_" + JPG)
-TOP_TILES_ON_ORIGINAL_THUMBNAIL_DIR = os.path.join(BASE_DIR,
-                                                   TOP_TILES_SUFFIX + "_on_original_thumbnail_" + JPG)
-
-TILE_DIR = os.path.join(BASE_DIR, "tiles_" + JPG)
-TILE_SUFFIX = "tile"
-
-STATS_DIR = os.path.join(BASE_DIR, "svs_stats")
-
-FONT_PATH = os.path.join(ROOT_DIR, FONTS, "Arial Bold.ttf")
-SUMMARY_TITLE_FONT_PATH = os.path.join(ROOT_DIR, FONTS, "Courier New Bold.ttf")
-
-CROP_RATIO = 10
-WHITENESS_TRESHOLD = 240
 
 def open_slide(filename):
   """
@@ -118,6 +54,19 @@ def open_slide(filename):
     slide = None
   return slide
 
+def get_slide_num():
+  """
+  FunctionDescription
+
+  Args:
+  arg: Argument description
+
+  returns:
+  Returns description
+  """
+  slide_list = os.listdir(SLIDE_DIR)
+  return len(slide_list)
+
 def open_image(filename):
   """
   Open an image (*.jpg, *.png, etc).
@@ -131,7 +80,7 @@ def open_image(filename):
   print("File Name: " + filename)
   image = Image.open(filename)
   return image
-
+  
 
 def open_image_np(filename):
   """
@@ -147,70 +96,163 @@ def open_image_np(filename):
   np_img = util.pil_to_np_rgb(pil_img)
   return np_img
 
-def get_last_image_number():
+def get_image_num():
+  """
+  FunctionDescription
+
+  Args:
+  arg: Argument description
+
+  returns:
+  Returns description
+  """
   image_list = os.listdir(GDC_TCGA_IMAGE_DIR)
-  last_image_filepath = image_list[-1]
-  last_image_index = last_image_filepath.split("-")[1]
+  return len(image_list)
+
+def get_image_index(image_name):
+  """
+  FunctionDescription
+
+  Args:
+    arg: Argument description
+
+  returns:
+    Returns description
+  """
+  image_index = image_name.split("-")[1]
+  return int(image_index)
+
+def get_last_image_number():
+  """
+  FunctionDescription
+
+  Args:
+    arg: Argument description
+
+  returns:
+    Returns description
+  """
+  image_list = os.listdir(GDC_TCGA_IMAGE_DIR)
+  image_id_list = list(map(lambda image_name: int(image_name.split("-")[1]), image_list))
+  last_image_index = reduce(lambda x, y: x if x >= y else y, image_id_list)
   print("Last Image Index: " + str(last_image_index))
-  return int(last_image_index)
+  return last_image_index
 
 def divide_multisample_images():
+  """
+  FunctionDescription
 
-   for root, dirs, files in os.walk(GDC_TCGA_IMAGE_DIR):
+  Args:
+    arg: Argument description
+
+  returns:
+    Returns description
+  """
+  for root, dirs, files in os.walk(GDC_TCGA_IMAGE_DIR):
     image_list = list(map(lambda file_name: os.path.join(root, file_name), files))
     print(image_list)
     list(map(lambda image_filepath: divide_image(image_filepath), image_list))
 
-def divide_image(image_filepath, samples_num=None):
+def divide_image(image_filepath, option=None):
+  """
+  FunctionDescription
 
+  Args:
+    arg: Argument description
+
+  returns:
+    Returns description
+  """
   img = open_image(image_filepath)
   img_name = os.path.basename(image_filepath)
+  slide_id_origin = SLIDE_PREFIX + img_name.split("-")[1]
+  new_image_filepath = os.path.join(GDC_TCGA_MULTI_IMAGE_DIR, img_name)
 
-  if (is_multisample_image(img, 2, 0)):
+  # Forced Division
+  if (option == 0):
     print("Two Vertical Samples")
-    save_samples(img, 2, 0)
-    new_image_filepath = os.path.join(GDC_TCGA_MULTI_IMAGE_DIR, img_name)
+    save_samples(slide_id_origin, img, 2, 0)
+    shutil.move(image_filepath, new_image_filepath)
+    print("Forced Division")
+
+  elif (option == 1):
+    print("Two Horizontal Samples")
+    save_samples(slide_id_origin, img, 2, 1)
+    shutil.move(image_filepath, new_image_filepath)
+    print("Forced Division")
+
+  elif (option == 2):
+    print("Three Vertical Samples")
+    save_samples(slide_id_origin, img, 3, 0)
+    shutil.move(image_filepath, new_image_filepath)
+    print("Forced Division")
+
+  elif (option == 3):
+    print("Three Horizontal Samples")
+    save_samples(slide_id_origin, img, 3, 1)
+    shutil.move(image_filepath, new_image_filepath)
+    print("Forced Division")
+
+  # Check Automated Multi-Sample Image
+  elif (is_multisample_image(img, 2, 0)):
+    print("Two Vertical Samples")
+    save_samples(slide_id_origin, img, 2, 0)
     shutil.move(image_filepath, new_image_filepath)
 
   elif (is_multisample_image(img, 2, 1)):
     print("Two Horizontal Samples")
-    save_samples(img, 2, 1)
-    new_image_filepath = os.path.join(GDC_TCGA_MULTI_IMAGE_DIR, img_name)
+    save_samples(slide_id_origin, img, 2, 1)
     shutil.move(image_filepath, new_image_filepath)
 
   elif (is_multisample_image(img, 3, 0)):
     print("Three Vertical Samples")
-    save_samples(img, 3, 0)
-    new_image_filepath = os.path.join(GDC_TCGA_MULTI_IMAGE_DIR, img_name)
+    save_samples(slide_id_origin, img, 3, 0)
     shutil.move(image_filepath, new_image_filepath)
 
   elif (is_multisample_image(img, 3, 1)):
     print("Three Horizontal Samples")
-    save_samples(img, 3, 1)
-    new_image_filepath = os.path.join(GDC_TCGA_MULTI_IMAGE_DIR, img_name)
+    save_samples(slide_id_origin, img, 3, 1)
     shutil.move(image_filepath, new_image_filepath)
 
   else:
-      print("No Multi-Sample Image")
+    print("No Multi-Sample Image")
 
 def get_sample_path(img_width, img_height, sample_img):
+  """
+  FunctionDescription
 
+  Args:
+    arg: Argument description
+
+  returns:
+    Returns description
+  """
   sample_width, sample_height = sample_img.size
 
   image_index = str(get_last_image_number() + 1).zfill(4)
-  sample_barcode = SLIDE_PREFIX + image_index
+  sample_id = SLIDE_PREFIX + image_index
   magnification = str(SCALE_FACTOR) + "x"
   original_dim = str(img_width) + "x" + str(img_height)
   sample_dim = str(sample_width) + "x" + str(sample_height)
 
-  sample_name = sample_barcode + "-" + magnification + "-" + original_dim + "-" + sample_dim + ".jpg"
+  sample_name = sample_id + "-" + magnification + "-" + original_dim + "-" + sample_dim + ".jpg"
   sample_path = os.path.join(GDC_TCGA_IMAGE_DIR, sample_name)
   print("Sample N° " + image_index + "Path: " + sample_path)
-  return sample_path
+  return sample_id, sample_path
 
-def save_samples(img, samples_num, orientation):
+def save_samples(slide_id_origin, img, samples_num, orientation):
+  """
+  FunctionDescription
 
+  Args:
+    arg: Argument description
+
+  returns:
+    Returns description
+  """
   width, height = img.size
+  slide_barcode = util.get_slide_barcode(slide_id=slide_id_origin)
+  slide_name = util.get_slide_name(slide_id=slide_id_origin)
 
   if (samples_num == 2 and orientation == 0):
     sample_width = width // 2
@@ -218,8 +260,14 @@ def save_samples(img, samples_num, orientation):
     left_crop = img.crop((0, 0, sample_width, height))
     right_crop = img.crop((sample_width + 1, 0, width, height))
 
-    left_crop.save(get_sample_path(width, height, left_crop))
-    right_crop.save(get_sample_path(width, height, right_crop))
+    left_sample_id, left_crop_path = get_sample_path(width, height, left_crop)
+    left_crop.save(left_crop_path)
+
+    right_sample_id, right_crop_path = get_sample_path(width, height, right_crop)
+    right_crop.save(right_crop_path)
+
+    util.add_image_data_row(left_sample_id, slide_barcode, slide_name, slide_id_origin)
+    util.add_image_data_row(right_sample_id, slide_barcode, slide_name, slide_id_origin)
 
     print("Saved Two Vertical Samples")
 
@@ -228,9 +276,15 @@ def save_samples(img, samples_num, orientation):
     print("Sample Height: " + str(sample_height))
     upper_crop = img.crop((0, 0, width, sample_height))
     lower_crop = img.crop((0, sample_height + 1, width, height))
+ 
+    upper_sample_id, upper_crop_path = get_sample_path(width, height, upper_crop)
+    upper_crop.save(upper_crop_path)
 
-    upper_crop.save(get_sample_path(width, height, upper_crop))
-    lower_crop.save(get_sample_path(width, height, lower_crop))
+    lower_sample_id, lower_crop_path = get_sample_path(width, height, lower_crop)
+    lower_crop.save(lower_crop_path)
+
+    util.add_image_data_row(upper_sample_id, slide_barcode, slide_name, slide_id_origin)
+    util.add_image_data_row(lower_sample_id, slide_barcode, slide_name, slide_id_origin)
 
     print("Saved Two Horizontal Samples")
 
@@ -241,9 +295,18 @@ def save_samples(img, samples_num, orientation):
     center_crop = img.crop((sample_width + 1, 0, 2 * sample_width + 1, height))
     right_crop = img.crop((2 * sample_width + 2, 0, width, height))
 
-    left_crop.save(get_sample_path(width, height, left_crop))
-    center_crop.save(get_sample_path(width, height, center_crop))
-    right_crop.save(get_sample_path(width, height, right_crop))
+    left_sample_id, left_crop_path = get_sample_path(width, height, left_crop)
+    left_crop.save(left_crop_path)
+
+    center_sample_id, center_crop_path = get_sample_path(width, height, center_crop)
+    center_crop.save(center_crop_path)
+
+    right_sample_id, right_crop_path = get_sample_path(width, height, right_crop)
+    right_crop.save(right_crop_path)
+
+    util.add_image_data_row(left_sample_id, slide_barcode, slide_name, slide_id_origin)
+    util.add_image_data_row(center_sample_id, slide_barcode, slide_name, slide_id_origin)
+    util.add_image_data_row(right_sample_id, slide_barcode, slide_name, slide_id_origin)
 
     print("Saved Three Vertical Samples")
 
@@ -254,11 +317,49 @@ def save_samples(img, samples_num, orientation):
     center_crop = img.crop((0, sample_height + 1, width, 2 * sample_height + 1))
     lower_crop = img.crop((0, 2 * sample_height + 2, width, height))
 
-    upper_crop.save(get_sample_path(width, height, upper_crop))
-    center_crop.save(get_sample_path(width, height, center_crop))
-    lower_crop.save(get_sample_path(width, height, lower_crop))
+    upper_sample_id, upper_crop_path = get_sample_path(width, height, upper_crop)
+    upper_crop.save(upper_crop_path)
+
+    center_sample_id, center_crop_path = get_sample_path(width, height, center_crop)
+    center_crop.save(center_crop_path)
+
+    lower_sample_id, lower_crop_path = get_sample_path(width, height, lower_crop)
+    lower_crop.save(lower_crop_path)
+
+    util.add_image_data_row(upper_sample_id, slide_barcode, slide_name, slide_id_origin)
+    util.add_image_data_row(center_sample_id, slide_barcode, slide_name, slide_id_origin)
+    util.add_image_data_row(lower_sample_id, slide_barcode, slide_name, slide_id_origin)
 
     print("Saved Three Horizontal Samples")
+
+def restore_image_dataset():
+  """
+  FunctionDescription
+
+  Args:
+    arg: Argument description
+
+  returns:
+    Returns description
+  """
+  img_list = os.listdir(GDC_TCGA_IMAGE_DIR)
+  img_multi_list = os.listdir(GDC_TCGA_MULTI_IMAGE_DIR)
+  img_list.sort()
+  img_sample_list = img_list[1041:]
+  # Get Back Multi-Sample images into "images" directory
+  list(map(lambda file_name: move_image_multi(file_name), img_multi_list))
+  # Remove Sample Images from "image" directory
+  list(map(lambda file_name: remove_sample(file_name), img_sample_list))
+  
+
+def remove_sample(file_name):
+  file_path = os.path.join(GDC_TCGA_IMAGE_DIR, file_name)
+  os.remove(file_path)
+
+def move_image_multi(file_name):
+  multi_image_path = os.path.join(GDC_TCGA_MULTI_IMAGE_DIR, file_name)
+  image_path = os.path.join(GDC_TCGA_IMAGE_DIR, file_name)
+  shutil.move(multi_image_path, image_path)
 
 def is_multisample_image(img, samples_num, orientation):
   """
@@ -290,11 +391,29 @@ def get_sample_delimiter_crop(img, samples_num, orientation):
   return np_crop
 
 def get_vertical_crop(img, center_pixel, img_height):
+  """
+  FunctionDescription
+
+  Args:
+    arg: Argument description
+
+  returns:
+    Returns description
+  """
   img_crop = img.crop((center_pixel - CROP_RATIO, 0, center_pixel + CROP_RATIO, img_height))
   return img_crop
 
 
 def get_horizontal_crop(img, center_pixel, img_width):
+  """
+  FunctionDescription
+
+  Args:
+    arg: Argument description
+
+  returns:
+    Returns description
+  """
   img_crop = img.crop((0, center_pixel - CROP_RATIO, img_width, center_pixel + CROP_RATIO))
   return img_crop
 
@@ -333,7 +452,7 @@ def get_tile_image_path(tile):
   """
   t = tile
   padded_sl_num = str(t.slide_num).zfill(4)
-  tile_path = os.path.join(TILE_DIR, padded_sl_num,
+  tile_path = os.path.join(TILE_IMAGE_DIR, padded_sl_num,
                            SLIDE_PREFIX + padded_sl_num + "-" + TILE_SUFFIX + "-r%d-c%d-x%d-y%d-w%d-h%d" % (
                              t.r, t.c, t.o_c_s, t.o_r_s, t.o_c_e - t.o_c_s, t.o_r_e - t.o_r_s) + "." + JPG)
   return tile_path
@@ -352,7 +471,7 @@ def get_tile_image_path_by_slide_row_col(slide_number, row, col):
     Path to image tile.
   """
   padded_sl_num = str(slide_number).zfill(4)
-  wilcard_path = os.path.join(TILE_DIR, padded_sl_num,
+  wilcard_path = os.path.join(TILE_IMAGE_DIR, padded_sl_num,
                               SLIDE_PREFIX + padded_sl_num + "-" + TILE_SUFFIX + "-r%d-c%d-*." % (
                                 row, col) + JPG)
   img_path = glob.glob(wilcard_path)[0]
@@ -377,10 +496,18 @@ def get_training_image_path(slide_number, large_w=None, large_h=None, small_w=No
   Returns:
      Path to the image file.
   """
+
   padded_sl_num = str(slide_number).zfill(4)
+  print("Slide number: " + str(padded_sl_num))
   if large_w is None and large_h is None and small_w is None and small_h is None:
     wildcard_path = os.path.join(GDC_TCGA_IMAGE_DIR, SLIDE_PREFIX + padded_sl_num + "*." + IMAGE_EXT)
-    img_path = glob.glob(wildcard_path)[0]
+
+    if(len(glob.glob(wildcard_path)) > 0):
+      img_path = glob.glob(wildcard_path)[0]
+      return img_path
+  
+    print("No existing image N°: " + str(slide_number))
+    return False
 
   else:
     img_path = os.path.join(GDC_TCGA_IMAGE_DIR, SLIDE_PREFIX + padded_sl_num + "-" + str(
@@ -409,8 +536,15 @@ def get_training_thumbnail_path(slide_number, large_w=None, large_h=None, small_
   """
   padded_sl_num = str(slide_number).zfill(4)
   if large_w is None and large_h is None and small_w is None and small_h is None:
-    wilcard_path = os.path.join(GDC_TCGA_THUMBNAIL_DIR, SLIDE_PREFIX + padded_sl_num + "*." + IMAGE_EXT)
-    img_path = glob.glob(wilcard_path)[0]
+    wildcard_path = os.path.join(GDC_TCGA_THUMBNAIL_DIR, SLIDE_PREFIX + padded_sl_num + "*." + IMAGE_EXT)
+
+    if(len(glob.glob(wildcard_path)) > 0):
+      img_path = glob.glob(wildcard_path)[0]
+      return img_path
+  
+    print("No existing thumbnail N°: " + str(slide_number))
+    return False
+  
   else:
     img_path = os.path.join(GDC_TCGA_THUMBNAIL_DIR, SLIDE_PREFIX + padded_sl_num + "-" + str(
       SCALE_FACTOR) + "x-" + str(
@@ -433,7 +567,7 @@ def get_filter_image_path(slide_number, filter_number, filter_name_info):
   Returns:
     Path to the filter image file.
   """
-  dir = FILTER_DIR
+  dir = FILTER_IMAGE_DIR
   if not os.path.exists(dir):
     os.makedirs(dir)
   img_path = os.path.join(dir, get_filter_image_filename(slide_number, filter_number, filter_name_info))
@@ -758,7 +892,7 @@ def get_filter_image_result(slide_number):
   padded_sl_num = str(slide_number).zfill(4)
   training_img_path = get_training_image_path(slide_number)
   large_w, large_h, small_w, small_h = parse_dimensions_from_image_filename(training_img_path)
-  img_path = os.path.join(FILTER_DIR, SLIDE_PREFIX + padded_sl_num + "-" + str(
+  img_path = os.path.join(FILTER_IMAGE_DIR, SLIDE_PREFIX + padded_sl_num + "-" + str(
     SCALE_FACTOR) + "x-" + FILTER_SUFFIX + str(large_w) + "x" + str(large_h) + "-" + str(small_w) + "x" + str(
     small_h) + "-" + FILTER_RESULT_TEXT + "." + JPG)
   return img_path
@@ -990,14 +1124,12 @@ def training_slide_range_to_images(start_ind, end_ind):
   """
   for slide_num in range(start_ind, end_ind + 1):
     slide_path = get_training_slide_path(slide_num)
-    image_path = get_training_image_path(slide_num)
     print("Trying to convert slide N°: " + str(slide_num))
 
-    if(slide_path != False and not os.path.isfile(image_path)):
+    if(slide_path != False):
       training_slide_to_image(slide_num)
 
   return (start_ind, end_ind)
-
 
 def singleprocess_training_slides_to_images():
   """
@@ -1005,7 +1137,7 @@ def singleprocess_training_slides_to_images():
   """
   t = Time()
 
-  num_train_images = NUM_SLIDES
+  num_train_images = get_slide_num()
   training_slide_range_to_images(1, num_train_images)
 
   t.elapsed_display()
@@ -1022,7 +1154,7 @@ def multiprocess_training_slides_to_images():
   num_processes = multiprocessing.cpu_count()
   pool = multiprocessing.Pool(num_processes)
 
-  num_train_images = NUM_SLIDES
+  num_train_images = get_slide_num()
 
   if num_processes > num_train_images:
     num_processes = num_train_images
@@ -1047,6 +1179,7 @@ def multiprocess_training_slides_to_images():
   # start tasks
   results = []
   for t in tasks:
+
     results.append(pool.apply_async(training_slide_range_to_images, t))
 
   for result in results:
@@ -1267,9 +1400,14 @@ if __name__ == "__main__":
 
   #slide_to_scaled_pil_image(18)[0].show()
   # singleprocess_training_slides_to_images()
-  # multiprocess_training_slides_to_images()
+  #multiprocess_training_slides_to_images()
   #print(ROOT_DIR)
-  divide_multisample_images()
-  #image_filepath = get_training_image_path(1017)
-  #divide_image(image_filepath)
+  #divide_multisample_images()
+  # image_filepath = get_training_image_path(1033)
+  # divide_image(image_filepath, option=0)
   #get_last_image_number()
+  #restore_image_dataset()
+  #print(get_image_num())
+  image_name = "TCGA-0001-20x-59976x47221-14994x11805.jpg"
+  image_index = get_image_index(image_name)
+  print(image_index)

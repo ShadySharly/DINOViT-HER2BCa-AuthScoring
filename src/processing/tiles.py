@@ -15,8 +15,10 @@
 # ------------------------------------------------------------------------
 
 # To get around renderer issue on macOS going from Matplotlib image to NumPy image.
-import matplotlib
+import sys
+sys.path.insert(0, '..')
 
+import matplotlib
 matplotlib.use('Agg')
 
 import colorsys
@@ -31,51 +33,7 @@ import util
 import filter
 import slide
 from util import Time
-
-# TILES AND TOP TILES GENERATION PARAMETERS
-TISSUE_HIGH_THRESH = 80
-TISSUE_LOW_THRESH = 10
-SCORE_HIGH_THRESH = 0.8
-SCORE_LOW_THRESH = 0.2
-MIN_SCORE_THRESH = 0.70
-MIN_TISSUE_THRESH = 80
-NUM_TOP_TILES = 70
-ROW_TILE_SIZE = 256
-COL_TILE_SIZE = 256
-FILTER_BY_SCORE = True
-FILTER_BY_TISSUE_PERCENTAGE = False
-
-DISPLAY_TILE_SUMMARY_LABELS = True
-TILE_LABEL_TEXT_SIZE = 10
-LABEL_ALL_TILES_IN_TOP_TILE_SUMMARY = True
-BORDER_ALL_TILES_IN_TOP_TILE_SUMMARY = True
-
-TILE_BORDER_SIZE = 2  # The size of the colored rectangular border around summary tiles.
-
-HIGH_COLOR = (0, 255, 0)
-MEDIUM_COLOR = (255, 255, 0)
-LOW_COLOR = (255, 165, 0)
-NONE_COLOR = (255, 0, 0)
-
-FADED_THRESH_COLOR = (128, 255, 128)
-FADED_MEDIUM_COLOR = (255, 255, 128)
-FADED_LOW_COLOR = (255, 210, 128)
-FADED_NONE_COLOR = (255, 128, 128)
-
-#FONT_PATH = "/Library/Fonts/Arial Bold.ttf"
-#SUMMARY_TITLE_FONT_PATH = "/Library/Fonts/Courier New Bold.ttf"
-SUMMARY_TITLE_TEXT_COLOR = (0, 0, 0)
-SUMMARY_TITLE_TEXT_SIZE = 24
-SUMMARY_TILE_TEXT_COLOR = (255, 255, 255)
-TILE_TEXT_COLOR = (0, 0, 0)
-TILE_TEXT_SIZE = 36
-TILE_TEXT_BACKGROUND_COLOR = (255, 255, 255)
-TILE_TEXT_W_BORDER = 5
-TILE_TEXT_H_BORDER = 4
-
-HSV_PURPLE = 270
-HSV_PINK = 330
-
+from metadata import *
 
 def get_num_tiles(rows, cols, row_tile_size, col_tile_size):
   """
@@ -161,9 +119,6 @@ def generate_tile_summaries(tile_sum, np_img, display=True, save_summary=False):
     display: If True, display tile summary to screen.
     save_summary: If True, save tile summary images.
   """
-
-  print(slide.FONT_PATH)
-  print(slide.SUMMARY_TITLE_FONT_PATH)
   z = 300  # height of area at top of summary slide
   slide_num = tile_sum.slide_num
   rows = tile_sum.scaled_h
@@ -186,7 +141,7 @@ def generate_tile_summaries(tile_sum, np_img, display=True, save_summary=False):
 
   summary_txt = summary_title(tile_sum) + "\n" + summary_stats(tile_sum)
 
-  summary_font = ImageFont.truetype(slide.SUMMARY_TITLE_FONT_PATH, size=SUMMARY_TITLE_TEXT_SIZE)
+  summary_font = ImageFont.truetype(SUMMARY_TITLE_FONT_PATH, size=SUMMARY_TITLE_TEXT_SIZE)
   draw.text((5, 5), summary_txt, SUMMARY_TITLE_TEXT_COLOR, font=summary_font)
   draw_orig.text((5, 5), summary_txt, SUMMARY_TITLE_TEXT_COLOR, font=summary_font)
 
@@ -259,7 +214,7 @@ def generate_top_tile_summaries(tile_sum, np_img, display=True, save_summary=Fal
   summary_title = "Slide %03d Top Tile Summary:" % slide_num
   summary_txt = summary_title + "\n" + summary_stats(tile_sum)
 
-  summary_font = ImageFont.truetype(slide.SUMMARY_TITLE_FONT_PATH, size=SUMMARY_TITLE_TEXT_SIZE)
+  summary_font = ImageFont.truetype(SUMMARY_TITLE_FONT_PATH, size=SUMMARY_TITLE_TEXT_SIZE)
   draw.text((5, 5), summary_txt, SUMMARY_TITLE_TEXT_COLOR, font=summary_font)
   draw_orig.text((5, 5), summary_txt, SUMMARY_TITLE_TEXT_COLOR, font=summary_font)
 
@@ -837,10 +792,13 @@ def image_range_to_tiles(start_ind, end_ind, display=False, save_summary=True, s
   """
   image_num_list = list()
   tile_summaries_dict = dict()
-  for slide_num in range(start_ind, end_ind + 1):
-    tile_summary = summary_and_tiles(slide_num, display, save_summary, save_data, save_top_tiles)
-    image_num_list.append(slide_num)
-    tile_summaries_dict[slide_num] = tile_summary
+  for image_dir_ind in range(start_ind, end_ind + 1):
+    image_name = os.listdir(FILTER_IMAGE_DIR)[image_dir_ind]
+    image_num = slide.get_image_index(image_name)
+
+    tile_summary = summary_and_tiles(image_num, display, save_summary, save_data, save_top_tiles)
+    image_num_list.append(image_num)
+    tile_summaries_dict[image_dir_ind] = tile_summary
   return image_num_list, tile_summaries_dict
 
 
@@ -878,7 +836,7 @@ def singleprocess_filtered_images_to_tiles(display=False, save_summary=True, sav
 
 
 def multiprocess_filtered_images_to_tiles(display=False, save_summary=True, save_data=True, save_top_tiles=True,
-                                          html=True, image_num_list=None):
+                                          html=False, image_num_list=None, start_ind=None):
   """
   Generate tile summaries and tiles for all training images using multiple processes (one process per core).
 
@@ -893,21 +851,36 @@ def multiprocess_filtered_images_to_tiles(display=False, save_summary=True, save
   timer = Time()
   print("Generating tile summaries (multiprocess)\n")
 
-  if save_summary and not os.path.exists(slide.TILE_SUMMARY_DIR):
-    os.makedirs(slide.TILE_SUMMARY_DIR)
+  if save_summary and not os.path.exists(TILE_SUMMARY_DIR):
+    os.makedirs(TILE_SUMMARY_DIR)
 
   # how many processes to use
-  num_processes = multiprocessing.cpu_count()
+  num_processes = CPU_COUNT
   pool = multiprocessing.Pool(num_processes)
+
+  image_num = util.get_dir_size(FILTER_IMAGE_DIR)
+  end_ind = start_ind + IMAGE_BATCH
 
   if image_num_list is not None:
     num_train_images = len(image_num_list)
+
+  elif start_ind is None:
+    start_ind = 0
+    num_train_images = image_num
+
+  elif end_ind > image_num:
+    end_ind = start_ind + IMAGE_BATCH
+    rest = end_ind % image_num
+    num_train_images = IMAGE_BATCH - rest
+
   else:
-    num_train_images = slide.get_num_training_slides()
+    num_train_images = IMAGE_BATCH
+
   if num_processes > num_train_images:
     num_processes = num_train_images
+    
   images_per_process = num_train_images / num_processes
-
+                                          
   print("Number of processes: " + str(num_processes))
   print("Number of training images: " + str(num_train_images))
 
@@ -917,8 +890,10 @@ def multiprocess_filtered_images_to_tiles(display=False, save_summary=True, save
     end_index = num_process * images_per_process
     start_index = int(start_index)
     end_index = int(end_index)
+    print("Start Ind : %d" % start_index)
+    print("End Ind : %d" % end_index)
     if image_num_list is not None:
-      sublist = image_num_list[start_index - 1:end_index]
+      sublist = image_num_list[start_index: end_index]
       tasks.append((sublist, display, save_summary, save_data, save_top_tiles))
       print("Task #" + str(num_process) + ": Process slides " + str(sublist))
     else:
@@ -930,6 +905,7 @@ def multiprocess_filtered_images_to_tiles(display=False, save_summary=True, save
 
   # start tasks
   results = []
+  
   for t in tasks:
     if image_num_list is not None:
       results.append(pool.apply_async(image_list_to_tiles, t))
@@ -943,9 +919,6 @@ def multiprocess_filtered_images_to_tiles(display=False, save_summary=True, save
     slide_nums.extend(image_nums)
     tile_summaries_dict.update(tile_summaries)
     print("Done tiling slides: %s" % image_nums)
-
-  if html:
-    generate_tiled_html_result(slide_nums, tile_summaries_dict, save_data)
 
   print("Time to generate tile previews (multiprocess): %s\n" % str(timer.elapsed()))
 
@@ -2055,5 +2028,5 @@ if __name__ == "__main__":
   # tile = dynamic_tile(2, 29, 16, True)
   # tile.display_with_histograms()
   # print("WEA  TILES")
-  singleprocess_filtered_images_to_tiles(image_num_list=[5018])
-  # multiprocess_filtered_images_to_tiles()
+  # singleprocess_filtered_images_to_tiles(image_num_list=[5018])
+  multiprocess_filtered_images_to_tiles(start_ind=0)
