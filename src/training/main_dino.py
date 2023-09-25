@@ -34,7 +34,6 @@ from torchvision import datasets, transforms
 from torchvision import models as torchvision_models
 
 import utils
-import part_utils
 import vision_transformer as vits
 from vision_transformer import DINOHead
 from metadata import *
@@ -124,7 +123,7 @@ def get_args_parser():
     # Misc
     parser.add_argument('--data_path', default=TILE_IMAGE_DIR, type=str,
         help='Please specify path to the ImageNet training data.')
-    parser.add_argument('--output_dir', default=CHECKPOINT_DIR, type=str, help='Path to save logs and checkpoints.')
+    parser.add_argument('--output_dir', default=CKPT_GDCA_TCGA, type=str, help='Path to save logs and checkpoints.')
     parser.add_argument('--saveckp_freq', default=20, type=int, help='Save checkpoint every x epochs.')
     parser.add_argument('--seed', default=0, type=int, help='Random seed.')
     parser.add_argument('--num_workers', default=10, type=int, help='Number of data loading workers per GPU.')
@@ -420,7 +419,9 @@ class DINOLoss(nn.Module):
         # ema update
         self.center = self.center * self.center_momentum + batch_center * (1 - self.center_momentum)
 
-
+# Este weon transforma las imagenes a globales y locales ctm
+#####################################################################################################
+#####################################################################################################
 class DataAugmentationDINO(object):
     def __init__(self, global_crops_scale, local_crops_scale, local_crops_number):
         flip_and_color_jitter = transforms.Compose([
@@ -470,7 +471,6 @@ class DataAugmentationDINO(object):
 
 
 if __name__ == '__main__':
-    print("HOLA\n")
     parser = argparse.ArgumentParser('DINO', parents=[get_args_parser()])
     args = parser.parse_args()
     print(args)

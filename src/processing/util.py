@@ -566,6 +566,12 @@ def get_dir_size(dir):
   file_list = os.listdir(dir)
   return len(file_list)
 
+def is_tile_dir(slide_number):
+  padded_sl_num = str(slide_number).zfill(4)
+  tile_dir_path = os.path.join(TILE_IMAGE_DIR, padded_sl_num)
+  return os.path.isdir(tile_dir_path)
+
+
 if __name__ == "__main__":
 
   #manifest_csv = txt_to_csv(MANIFEST_DIR + "/gdc_manifest_3111.txt", MANIFEST_DIR)
@@ -585,6 +591,8 @@ if __name__ == "__main__":
   #print(str(ver))
   #svs_files = get_svs_files_from_dir(MANIFEST_DIR)
   #print(svs_files)
-  add_image_data_row()
+  #add_image_data_row()
+  exists = is_tile_dir(2)
+  print("Tile Exists:" + str(exists))
 
 

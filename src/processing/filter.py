@@ -213,6 +213,8 @@ def mask_percent(np_img):
   """
   if (len(np_img.shape) == 3) and (np_img.shape[2] == 3):
     np_sum = np_img[:, :, 0] + np_img[:, :, 1] + np_img[:, :, 2]
+    print("NP SUM: " + str(np_sum))
+    print("NP SUM SIZE: " + str(np_sum.size))
     mask_percentage = 100 - np.count_nonzero(np_sum) / np_sum.size * 100
   else:
     mask_percentage = 100 - np.count_nonzero(np_img) / np_img.size * 100

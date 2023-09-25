@@ -26,15 +26,12 @@ import numpy as np
 import openslide
 from openslide import OpenSlideError
 import os
-import PIL
 from PIL import Image
 import re
 import util
 from util import Time
 from functools import reduce
 from metadata import *
-
-Image.MAX_IMAGE_PIXELS = None
 
 def open_slide(filename):
   """
@@ -1081,7 +1078,7 @@ def save_thumbnail(pil_img, size, path, display_path=False):
     display_path: If True, display thumbnail path in console.
   """
   max_size = tuple(round(size * d / max(pil_img.size)) for d in pil_img.size)
-  img = pil_img.resize(max_size, Image.Resampling.BILINEAR)
+  img = pil_img.resize(max_size, Image.BILINEAR)
   if display_path:
     print("Saving thumbnail to: " + path)
   dir = os.path.dirname(path)
