@@ -109,7 +109,7 @@ def create_summary_pil_img(np_img, title_area_height, row_tile_size, col_tile_si
   return summary
 
 
-def generate_tile_summaries(tile_sum, np_img, display=True, save_summary=False):
+def generate_tile_summaries(tile_sum, np_img, display, save_summary):
   """
   Generate summary images/thumbnails showing a 'heatmap' representation of the tissue segmentation of all tiles.
 
@@ -279,7 +279,7 @@ def np_tile_stat_img(tiles):
     count += 1
     tup = (t.r, t.c, t.rank, t.tissue_percentage, t.color_factor, t.s_and_v_factor, t.quantity_factor, t.score)
     tile_stats += "R%03d C%03d #%003d TP:%6.2f%% CF:%4.0f SVF:%4.2f QF:%4.2f S:%0.4f" % tup
-  np_stats = np_text(tile_stats, font_path=slide.SUMMARY_TITLE_FONT_PATH, font_size=14)
+  np_stats = np_text(tile_stats, font_path=SUMMARY_TITLE_FONT_PATH, font_size=14)
   return np_stats
 
 
@@ -461,7 +461,7 @@ def save_top_tiles_on_original_image(pil_img, slide_num):
     "%-20s | Time: %-14s  Name: %s" % ("Save Top Orig Thumb", str(t.elapsed()), thumbnail_filepath))
 
 
-def summary_and_tiles(slide_num, display=False, save_summary=True, save_data=True, save_top_tiles=True):
+def summary_and_tiles(slide_num, display, save_summary, save_data, save_top_tiles):
   """
   Generate tile summary and top tiles for slide.
 
@@ -479,8 +479,8 @@ def summary_and_tiles(slide_num, display=False, save_summary=True, save_data=Tru
   print("Slide ID: %s", str(slide_num))
   if save_data:
     save_tile_data(tile_sum)
-    generate_tile_summaries(tile_sum, np_img, display=display, save_summary=save_summary)
-    generate_top_tile_summaries(tile_sum, np_img, display=display, save_summary=save_summary)
+    generate_tile_summaries(tile_sum, np_img, display, save_summary)
+    generate_top_tile_summaries(tile_sum, np_img, display, save_summary)
   if save_top_tiles:
     for tile in tile_sum.top_tiles():
       tile.save_tile()
@@ -498,7 +498,7 @@ def save_tile_data(tile_summary):
   time = Time()
 
   csv = summary_title(tile_summary) + "\n" + summary_stats(tile_summary)
-
+  '''
   csv += "\n\n\nTile Num,Row,Column,Tissue %,Tissue Quantity,Col Start,Row Start,Col End,Row End,Col Size,Row Size," + \
          "Original Col Start,Original Row Start,Original Col End,Original Row End,Original Col Size,Original Row Size," + \
          "Color Factor,S and V Factor,Quantity Factor,Score\n"
@@ -509,7 +509,7 @@ def save_tile_data(tile_summary):
       t.r_e - t.r_s, t.o_c_s, t.o_r_s, t.o_c_e, t.o_r_e, t.o_c_e - t.o_c_s, t.o_r_e - t.o_r_s, t.color_factor,
       t.s_and_v_factor, t.quantity_factor, t.score)
     csv += line
-
+  '''
   data_path = slide.get_tile_data_path(tile_summary.slide_num)
   csv_file = open(data_path, "w")
   csv_file.write(csv)
@@ -758,284 +758,6 @@ def tissue_quantity(tissue_percentage):
     return TissueQuantity.LOW
   else:
     return TissueQuantity.NONE
-
-
-def image_list_to_tiles(image_num_list, display, save_summary, save_data, save_top_tiles):
-  """
-  Generate tile summaries and tiles for a list of images.
-
-  Args:
-    image_num_list: List of image numbers.
-    display: If True, display tile summary images to screen.
-    save_summary: If True, save tile summary images.
-    save_data: If True, save tile data to csv file.
-    save_top_tiles: If True, save top tiles to files.
-  """
-  tile_summaries_dict = dict()
-  for slide_num in image_num_list:
-    tile_summary = summary_and_tiles(slide_num, display, save_summary, save_data, save_top_tiles)
-    tile_summaries_dict[slide_num] = tile_summary
-  return image_num_list, tile_summaries_dict
-
-
-def image_range_to_tiles(start_ind, end_ind, display, save_summary, save_data, save_top_tiles):
-  """
-  Generate tile summaries and tiles for a range of images.
-
-  Args:
-    start_ind: Starting index (inclusive).
-    end_ind: Ending index (inclusive).
-    display: If True, display tile summary images to screen.
-    save_summary: If True, save tile summary images.
-    save_data: If True, save tile data to csv file.
-    save_top_tiles: If True, save top tiles to files.
-  """
-  print("Start Ind : %d" % start_ind)
-  print("End Ind : %d" % end_ind)
-  image_num_list = list()
-  tile_summaries_dict = dict()
-  for image_dir_ind in range(start_ind, end_ind):
-    image_name = os.listdir(FILTER_IMAGE_DIR)[image_dir_ind]
-    image_num = slide.get_image_index(image_name)
-    print("Slide ID: %d" % image_num)
-
-    if (is_tile_dir(image_num) is False):
-      tile_summary = summary_and_tiles(image_num, display, save_summary, save_data, save_top_tiles)
-      image_num_list.append(image_num)
-      tile_summaries_dict[image_dir_ind] = tile_summary
-
-    else:
-      print("Existing tiles for id %d" % image_num)
-
-  return image_num_list, tile_summaries_dict
-
-def singleprocess_filtered_images_to_tiles(display, save_summary, save_data, save_top_tiles,
-                                           image_num_list=None):
-  """
-  Generate tile summaries and tiles for training images using a single process.
-
-  Args:
-    display: If True, display tile summary images to screen.
-    save_summary: If True, save tile summary images.
-    save_data: If True, save tile data to csv file.
-    save_top_tiles: If True, save top tiles to files.
-    html: If True, generate HTML page to display tiled images
-    image_num_list: Optionally specify a list of image slide numbers.
-  """
-  t = Time()
-  print("Generating tile summaries\n")
-
-  if image_num_list is not None:
-    image_num_list, tile_summaries_dict = image_list_to_tiles(image_num_list, display, save_summary, save_data,
-                                                              save_top_tiles)
-  else:
-    num_training_slides = slide.get_num_training_slides()
-    print(num_training_slides)
-    image_num_list, tile_summaries_dict = image_range_to_tiles(1, num_training_slides, display, save_summary, save_data,
-                                                               save_top_tiles)
-
-  print("Time to generate tile summaries: %s\n" % str(t.elapsed()))
-
-
-def multiprocess_filtered_images_to_tiles(display=False, save_summary=False, save_data=False, save_top_tiles=True,
-                                          image_num_list=None, start_ind=None):
-  """
-  Generate tile summaries and tiles for all training images using multiple processes (one process per core).
-
-  Args:
-    display: If True, display images to screen (multiprocessed display not recommended).
-    save_summary: If True, save tile summary images.
-    save_data: If True, save tile data to csv file.
-    save_top_tiles: If True, save top tiles to files.
-    html: If True, generate HTML page to display tiled images.
-    image_num_list: Optionally specify a list of image slide numbers.
-  """
-  timer = Time()
-  print("Generating tile summaries (multiprocess)\n")
-
-  if save_summary and not os.path.exists(TILE_SUMMARY_DIR):
-    os.makedirs(TILE_SUMMARY_DIR)
-
-  # how many processes to use
-  num_processes = CPU_COUNT
-  pool = multiprocessing.Pool(num_processes)
-
-  image_num = util.get_dir_size(FILTER_IMAGE_DIR)
-
-  if image_num_list is not None:
-    num_train_images = len(image_num_list)
-
-  elif start_ind is None:
-    start_ind = 0
-    num_train_images = image_num
-
-  else:
-    end_ind = start_ind + IMAGE_BATCH
-  
-    if end_ind > image_num:
-      rest = end_ind % image_num
-      num_train_images = IMAGE_BATCH - rest
-
-    else:
-      num_train_images = IMAGE_BATCH
-
-  if num_processes > num_train_images:
-    num_processes = num_train_images
-    
-  images_per_process = num_train_images / num_processes
-                                          
-  print("Number of processes: " + str(num_processes))
-  print("Number of training images: " + str(num_train_images))
-
-  tasks = []
-  for num_process in range(1, num_processes + 1):
-    start_index = (num_process - 1) * images_per_process
-    end_index = num_process * images_per_process
-    start_index = int(start_index)
-    end_index = int(end_index)
-    
-    if image_num_list is not None:
-      sublist = image_num_list[start_index: end_index]
-      tasks.append((sublist, display, save_summary, save_data, save_top_tiles))
-      print("Task #" + str(num_process) + ": Process slides " + str(sublist))
-    else:
-      tasks.append((start_index, end_index, display, save_summary, save_data, save_top_tiles))
-      if start_index == end_index:
-        print("Task #" + str(num_process) + ": Process slide " + str(start_index))
-      else:
-        print("Task #" + str(num_process) + ": Process slides " + str(start_index) + " to " + str(end_index))
-
-  # start tasks
-  results = []
-  
-  for t in tasks:
-    if image_num_list is not None:
-      results.append(pool.apply_async(image_list_to_tiles, t))
-    else:
-      results.append(pool.apply_async(image_range_to_tiles, t))
-
-  slide_nums = list()
-  tile_summaries_dict = dict()
-  
-  for result in results:
-    image_nums, tile_summaries = result.get()
-    slide_nums.extend(image_nums)
-    tile_summaries_dict.update(tile_summaries)
-    print("Done tiling slides: %s" % image_nums)
-
-  print("Time to generate tile previews (multiprocess): %s\n" % str(timer.elapsed()))
-
-
-def image_row(slide_num, tile_summary, data_link):
-  """
-  Generate HTML for viewing a tiled image.
-
-  Args:
-    slide_num: The slide number.
-    tile_summary: TileSummary object.
-    data_link: If True, add link to tile data csv file.
-
-  Returns:
-    HTML table row for viewing a tiled image.
-  """
-  orig_img = slide.get_training_image_path(slide_num)
-  orig_thumb = slide.get_training_thumbnail_path(slide_num)
-  filt_img = slide.get_filter_image_result(slide_num)
-  filt_thumb = slide.get_filter_thumbnail_result(slide_num)
-  sum_img = slide.get_tile_summary_image_path(slide_num)
-  sum_thumb = slide.get_tile_summary_thumbnail_path(slide_num)
-  osum_img = slide.get_tile_summary_on_original_image_path(slide_num)
-  osum_thumb = slide.get_tile_summary_on_original_thumbnail_path(slide_num)
-  top_img = slide.get_top_tiles_image_path(slide_num)
-  top_thumb = slide.get_top_tiles_thumbnail_path(slide_num)
-  otop_img = slide.get_top_tiles_on_original_image_path(slide_num)
-  otop_thumb = slide.get_top_tiles_on_original_thumbnail_path(slide_num)
-  html = "    <tr>\n" + \
-         "      <td style=\"vertical-align: top\">\n" + \
-         "        <a target=\"_blank\" href=\"%s\">S%03d Original<br/>\n" % (orig_img, slide_num) + \
-         "          <img src=\"%s\" />\n" % (orig_thumb) + \
-         "        </a>\n" + \
-         "      </td>\n" + \
-         "      <td style=\"vertical-align: top\">\n" + \
-         "        <a target=\"_blank\" href=\"%s\">S%03d Filtered<br/>\n" % (filt_img, slide_num) + \
-         "          <img src=\"%s\" />\n" % (filt_thumb) + \
-         "        </a>\n" + \
-         "      </td>\n"
-
-  html += "      <td style=\"vertical-align: top\">\n" + \
-          "        <a target=\"_blank\" href=\"%s\">S%03d Tiles<br/>\n" % (sum_img, slide_num) + \
-          "          <img src=\"%s\" />\n" % (sum_thumb) + \
-          "        </a>\n" + \
-          "      </td>\n"
-
-  html += "      <td style=\"vertical-align: top\">\n" + \
-          "        <a target=\"_blank\" href=\"%s\">S%03d Tiles<br/>\n" % (osum_img, slide_num) + \
-          "          <img src=\"%s\" />\n" % (osum_thumb) + \
-          "        </a>\n" + \
-          "      </td>\n"
-
-  html += "      <td style=\"vertical-align: top\">\n"
-  if data_link:
-    html += "        <div style=\"white-space: nowrap;\">S%03d Tile Summary\n" % slide_num + \
-            "        (<a target=\"_blank\" href=\"%s\">Data</a>)</div>\n" % slide.get_tile_data_path(slide_num)
-  else:
-    html += "        <div style=\"white-space: nowrap;\">S%03d Tile Summary</div>\n" % slide_num
-
-  html += "        <div style=\"font-size: smaller; white-space: nowrap;\">\n" + \
-          "          %s\n" % summary_stats(tile_summary).replace("\n", "<br/>\n          ") + \
-          "        </div>\n" + \
-          "      </td>\n"
-
-  html += "      <td style=\"vertical-align: top\">\n" + \
-          "        <a target=\"_blank\" href=\"%s\">S%03d Top Tiles<br/>\n" % (top_img, slide_num) + \
-          "          <img src=\"%s\" />\n" % (top_thumb) + \
-          "        </a>\n" + \
-          "      </td>\n"
-
-  html += "      <td style=\"vertical-align: top\">\n" + \
-          "        <a target=\"_blank\" href=\"%s\">S%03d Top Tiles<br/>\n" % (otop_img, slide_num) + \
-          "          <img src=\"%s\" />\n" % (otop_thumb) + \
-          "        </a>\n" + \
-          "      </td>\n"
-
-  top_tiles = tile_summary.top_tiles()
-  num_tiles = len(top_tiles)
-  score_num = 0
-  for t in top_tiles:
-    score_num += 1
-    t.tile_num = score_num
-  # sort top tiles by rows and columns to make them easier to locate on HTML page
-  top_tiles = sorted(top_tiles, key=lambda t: (t.r, t.c), reverse=False)
-
-  html += "      <td style=\"vertical-align: top\">\n" + \
-          "        <div style=\"white-space: nowrap;\">S%03d Top %d Tile Scores</div>\n" % (slide_num, num_tiles) + \
-          "        <div style=\"font-size: smaller; white-space: nowrap;\">\n"
-
-  html += "        <table>\n"
-  MAX_TILES_PER_ROW = 15
-  num_cols = math.ceil(num_tiles / MAX_TILES_PER_ROW)
-  num_rows = num_tiles if num_tiles < MAX_TILES_PER_ROW else MAX_TILES_PER_ROW
-  for row in range(num_rows):
-    html += "          <tr>\n"
-    for col in range(num_cols):
-      html += "            <td style=\"border: none;\">"
-      tile_num = row + (col * num_rows) + 1
-      if tile_num <= num_tiles:
-        t = top_tiles[tile_num - 1]
-        label = "R%03d C%03d %0.4f (#%02d)" % (t.r, t.c, t.score, t.tile_num)
-        tile_img_path = slide.get_tile_image_path(t)
-        html += "<a target=\"_blank\" href=\"%s\">%s</a>" % (tile_img_path, label)
-      else:
-        html += "&nbsp;"
-      html += "</td>\n"
-    html += "          </tr>\n"
-  html += "        </table>\n"
-
-  html += "        </div>\n"
-  html += "      </td>\n"
-
-  html += "    </tr>\n"
-  return html
 
 def np_hsv_hue_histogram(h):
   """
@@ -1965,9 +1687,174 @@ def dynamic_tile(slide_num, row, col, small_tile_in_tile=False):
   tile = tile_summary.get_tile(row, col)
   return tile
 
+def image_list_to_tiles(image_num_list, display, save_summary, save_data, save_top_tiles):
+  """
+  Generate tile summaries and tiles for a list of images.
+
+  Args:
+    image_num_list: List of image numbers.
+    display: If True, display tile summary images to screen.
+    save_summary: If True, save tile summary images.
+    save_data: If True, save tile data to csv file.
+    save_top_tiles: If True, save top tiles to files.
+  """
+  tile_summaries_dict = dict()
+  for slide_num in image_num_list:
+    tile_summary = summary_and_tiles(slide_num, display, save_summary, save_data, save_top_tiles)
+    tile_summaries_dict[slide_num] = tile_summary
+  return image_num_list, tile_summaries_dict
+
+
+def image_range_to_tiles(start_ind, end_ind, display, save_summary, save_data, save_top_tiles):
+  """
+  Generate tile summaries and tiles for a range of images.
+
+  Args:
+    start_ind: Starting index (inclusive).
+    end_ind: Ending index (inclusive).
+    display: If True, display tile summary images to screen.
+    save_summary: If True, save tile summary images.
+    save_data: If True, save tile data to csv file.
+    save_top_tiles: If True, save top tiles to files.
+  """
+  print("Start Ind : %d" % start_ind)
+  print("End Ind : %d" % end_ind)
+  image_num_list = list()
+  tile_summaries_dict = dict()
+  for image_dir_ind in range(start_ind, end_ind):
+    image_name = os.listdir(FILTER_IMAGE_DIR)[image_dir_ind]
+    image_num = slide.get_image_index(image_name)
+    print("Slide ID: %d" % image_num)
+
+    if (is_tile_dir(image_num) is False):
+      tile_summary = summary_and_tiles(image_num, display, save_summary, save_data, save_top_tiles)
+      image_num_list.append(image_num)
+      tile_summaries_dict[image_dir_ind] = tile_summary
+
+    else:
+      print("Existing tiles for id %d" % image_num)
+
+  return image_num_list, tile_summaries_dict
+
+def singleprocess_filtered_images_to_tiles(display, save_summary, save_data, save_top_tiles,
+                                           image_num_list=None):
+  """
+  Generate tile summaries and tiles for training images using a single process.
+
+  Args:
+    display: If True, display tile summary images to screen.
+    save_summary: If True, save tile summary images.
+    save_data: If True, save tile data to csv file.
+    save_top_tiles: If True, save top tiles to files.
+    html: If True, generate HTML page to display tiled images
+    image_num_list: Optionally specify a list of image slide numbers.
+  """
+  t = Time()
+  print("Generating tile summaries\n")
+
+  if image_num_list is not None:
+    image_num_list, tile_summaries_dict = image_list_to_tiles(image_num_list, display, save_summary, save_data,
+                                                              save_top_tiles)
+  else:
+    num_training_slides = slide.get_num_training_slides()
+    print(num_training_slides)
+    image_num_list, tile_summaries_dict = image_range_to_tiles(1, num_training_slides, display, save_summary, save_data,
+                                                               save_top_tiles)
+
+  print("Time to generate tile summaries: %s\n" % str(t.elapsed()))
+
+
+def multiprocess_filtered_images_to_tiles(display=True, save_summary=True, save_data=True, save_top_tiles=True,
+                                          image_num_list=None, start_ind=None):
+  """
+  Generate tile summaries and tiles for all training images using multiple processes (one process per core).
+
+  Args:
+    display: If True, display images to screen (multiprocessed display not recommended).
+    save_summary: If True, save tile summary images.
+    save_data: If True, save tile data to csv file.
+    save_top_tiles: If True, save top tiles to files.
+    html: If True, generate HTML page to display tiled images.
+    image_num_list: Optionally specify a list of image slide numbers.
+  """
+  timer = Time()
+  print("Generating tile summaries (multiprocess)\n")
+
+  if save_summary and not os.path.exists(TILE_SUMMARY_DIR):
+    os.makedirs(TILE_SUMMARY_DIR)
+
+  # how many processes to use
+  num_processes = CPU_COUNT
+  pool = multiprocessing.Pool(num_processes)
+
+  image_num = util.get_dir_size(FILTER_IMAGE_DIR)
+
+  if image_num_list is not None:
+    num_train_images = len(image_num_list)
+
+  elif start_ind is None:
+    start_ind = 0
+    num_train_images = image_num
+
+  else:
+    end_ind = start_ind + IMAGE_BATCH
+  
+    if end_ind > image_num:
+      rest = end_ind % image_num
+      num_train_images = IMAGE_BATCH - rest
+
+    else:
+      num_train_images = IMAGE_BATCH
+
+  if num_processes > num_train_images:
+    num_processes = num_train_images
+    
+  images_per_process = num_train_images / num_processes
+                                          
+  print("Number of processes: " + str(num_processes))
+  print("Number of training images: " + str(num_train_images))
+
+  tasks = []
+  for num_process in range(1, num_processes + 1):
+    start_index = (num_process - 1) * images_per_process
+    end_index = num_process * images_per_process
+    start_index = int(start_index)
+    end_index = int(end_index)
+    
+    if image_num_list is not None:
+      sublist = image_num_list[start_index: end_index]
+      tasks.append((sublist, display, save_summary, save_data, save_top_tiles))
+      print("Task #" + str(num_process) + ": Process slides " + str(sublist))
+    else:
+      tasks.append((start_index, end_index, display, save_summary, save_data, save_top_tiles))
+      if start_index == end_index:
+        print("Task #" + str(num_process) + ": Process slide " + str(start_index))
+      else:
+        print("Task #" + str(num_process) + ": Process slides " + str(start_index) + " to " + str(end_index))
+
+  # start tasks
+  results = []
+  
+  for t in tasks:
+    if image_num_list is not None:
+      results.append(pool.apply_async(image_list_to_tiles, t))
+    else:
+      results.append(pool.apply_async(image_range_to_tiles, t))
+
+  slide_nums = list()
+  tile_summaries_dict = dict()
+  
+  for result in results:
+    image_nums, tile_summaries = result.get()
+    slide_nums.extend(image_nums)
+    tile_summaries_dict.update(tile_summaries)
+    print("Done tiling slides: %s" % image_nums)
+
+  print("Time to generate tile previews (multiprocess): %s\n" % str(timer.elapsed()))
+
 if __name__ == "__main__":
   # tile = dynamic_tile(2, 29, 16, True)
   # tile.display_with_histograms()
   # print("WEA  TILES")
   # singleprocess_filtered_images_to_tiles(image_num_list=[5018])
-  multiprocess_filtered_images_to_tiles(image_num_list=[522])
+  multiprocess_filtered_images_to_tiles(image_num_list=[548])
