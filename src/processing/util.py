@@ -571,6 +571,12 @@ def is_tile_dir(slide_number):
   tile_dir_path = os.path.join(TILE_IMAGE_DIR, padded_sl_num)
   return os.path.isdir(tile_dir_path)
 
+def remove_files_from_dir(files_path, dir_path):
+  
+  for file_name in files_path:
+    file_path = os.path.join(dir_path, file_name)
+    os.remove(file_path)
+
 
 if __name__ == "__main__":
 

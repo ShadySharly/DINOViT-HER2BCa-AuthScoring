@@ -31,7 +31,7 @@ import skimage.morphology as sk_morphology
 import skimage.segmentation as sk_segmentation
 import slide
 import util
-from util import Time
+from util import *
 from metadata import *
 
 def filter_rgb_to_grayscale(np_img, output_type="uint8"):
@@ -1367,8 +1367,9 @@ def apply_filters_to_image_range(start_ind, end_ind, save, display):
   for image_dir_ind in range(start_ind, end_ind + 1):
     image_name = os.listdir(GDC_TCGA_IMAGE_DIR)[image_dir_ind]
     image_num = slide.get_image_index(image_name)
+    print("Slide ID: %d" % image_num)
 
-    if(str(slide.get_training_image_path(image_num)) != "False"):
+    if(is_tile_dir(image_num) is False):
       apply_filters_to_image(image_num, save=save, display=display)
 
 def singleprocess_apply_filters_to_images(save=True, display=False, html=False, image_num_list=None, start_ind=None):
@@ -1432,7 +1433,6 @@ def multiprocess_apply_filters_to_images(save=True, display=False, html=False, i
   pool = multiprocessing.Pool(num_processes)
 
   image_num = util.get_dir_size(GDC_TCGA_IMAGE_DIR)
-  end_ind = start_ind + IMAGE_BATCH
 
   if image_num_list is not None:
     num_train_images = len(image_num_list)
@@ -1441,18 +1441,19 @@ def multiprocess_apply_filters_to_images(save=True, display=False, html=False, i
     start_ind = 0
     num_train_images = image_num
 
-  elif end_ind > image_num:
-    end_ind = start_ind + IMAGE_BATCH
-    rest = end_ind % image_num
-    num_train_images = IMAGE_BATCH - rest
-
   else:
-    num_train_images = IMAGE_BATCH
+    end_ind = start_ind + IMAGE_BATCH
+  
+    if end_ind > image_num:
+      rest = end_ind % image_num
+      num_train_images = IMAGE_BATCH - rest
 
-  print("N° Images to Filter: %d" % num_train_images)
+    else:
+      num_train_images = IMAGE_BATCH
 
   if num_processes > num_train_images:
     num_processes = num_train_images
+
   images_per_process = num_train_images / num_processes
 
   print("Number of processes: " + str(num_processes))
@@ -1460,12 +1461,13 @@ def multiprocess_apply_filters_to_images(save=True, display=False, html=False, i
 
   tasks = []
   for num_process in range(1, num_processes + 1):
-    start_index = (num_process - 1) * images_per_process + 1
+    start_index = (num_process - 1) * images_per_process
     end_index = num_process * images_per_process
     start_index = int(start_index)
     end_index = int(end_index)
+
     if image_num_list is not None:
-      sublist = image_num_list[start_index - 1:end_index]
+      sublist = image_num_list[start_index: end_index]
       tasks.append((sublist, save, display))
       print("Task #" + str(num_process) + ": Process slides " + str(sublist))
     else:
@@ -1491,6 +1493,6 @@ def multiprocess_apply_filters_to_images(save=True, display=False, html=False, i
 if __name__ == "__main__":
   # slide.training_slide_to_image(2)
   # singleprocess_apply_filters_to_images(image_num_list=[2], display=True)
-  singleprocess_apply_filters_to_images()
-  #multiprocess_apply_filters_to_images(start_ind=0)
-  #apply_filters_to_image_list([1464], True, False)
+  # singleprocess_apply_filters_to_images()
+  multiprocess_apply_filters_to_images(image_num_list=[1141])
+  # apply_filters_to_image_list([1464], True, False)
