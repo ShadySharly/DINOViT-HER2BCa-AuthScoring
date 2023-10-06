@@ -737,8 +737,7 @@ def filter_threshold(np_img, threshold, output_type="bool"):
   util.np_info(result, "Threshold", t.elapsed())
   return result
 
-
-def filter_green_channel(np_img, green_thresh=200, avoid_overmask=True, overmask_thresh=90, output_type="bool"):
+def filter_green_channel(np_img, green_thresh=200, avoid_overmask=False, overmask_thresh=90, output_type="bool"):
   """
   Create a mask to filter out pixels with a green channel value greater than a particular threshold, since hematoxylin
   and eosin are purplish and pinkish, which do not have much green to them.
@@ -1494,5 +1493,5 @@ if __name__ == "__main__":
   # slide.training_slide_to_image(2)
   # singleprocess_apply_filters_to_images(image_num_list=[2], display=True)
   # singleprocess_apply_filters_to_images()
-  multiprocess_apply_filters_to_images(image_num_list=[1141])
+  multiprocess_apply_filters_to_images()
   # apply_filters_to_image_list([1464], True, False)
