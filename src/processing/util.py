@@ -571,6 +571,11 @@ def is_tile_dir(slide_number):
   tile_dir_path = os.path.join(TILE_IMAGE_DIR, padded_sl_num)
   return os.path.isdir(tile_dir_path)
 
+def is_filter_dir(slide_number):
+  padded_sl_num = str(slide_number).zfill(4)
+  tile_dir_path = os.path.join(FILTER_IMAGE_DIR, padded_sl_num)
+  return os.path.isdir(tile_dir_path)
+
 if __name__ == "__main__":
 
   #manifest_csv = txt_to_csv(MANIFEST_DIR + "/gdc_manifest_3111.txt", MANIFEST_DIR)

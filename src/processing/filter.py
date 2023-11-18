@@ -1363,15 +1363,18 @@ def apply_filters_to_image_range(start_ind, end_ind, save, display):
     Tuple consisting of 1) staring index of slides converted to images, 2) ending index of slides converted to images,
     and 3) a dictionary of image filter information.
   """
-  for image_dir_ind in range(start_ind, end_ind + 1):
+  for image_dir_ind in range(start_ind, end_ind):
     image_name = os.listdir(GDC_TCGA_IMAGE_DIR)[image_dir_ind]
     image_num = slide.get_image_index(image_name)
     print("Slide ID: %d" % image_num)
 
-    if(is_tile_dir(image_num) is False):
+    if(is_filter_dir(image_num) is False):
       apply_filters_to_image(image_num, save=save, display=display)
 
-def singleprocess_apply_filters_to_images(save=True, display=False, html=False, image_num_list=None, start_ind=None):
+    else:
+      print("Existing filter for id %d" % image_num)
+
+def singleprocess_apply_filters_to_images(save=True, display=False, image_num_list=None, start_ind=None):
   """
   Apply a set of filters to training images and optionally save and/or display the filtered images.
 
@@ -1385,7 +1388,6 @@ def singleprocess_apply_filters_to_images(save=True, display=False, html=False, 
   print("Applying filters to images\n")
 
   image_num = util.get_dir_size(GDC_TCGA_IMAGE_DIR)
-  end_ind = start_ind + IMAGE_BATCH
 
   if image_num_list is not None:
     num_train_images = len(image_num_list)
@@ -1394,13 +1396,15 @@ def singleprocess_apply_filters_to_images(save=True, display=False, html=False, 
     start_ind = 0
     num_train_images = image_num
 
-  elif end_ind > image_num:
-    end_ind = start_ind + IMAGE_BATCH
-    rest = end_ind % image_num
-    num_train_images = IMAGE_BATCH - rest
-
   else:
-    num_train_images = IMAGE_BATCH
+    end_ind = start_ind + IMAGE_BATCH
+  
+    if end_ind > image_num:
+      rest = end_ind % image_num
+      num_train_images = IMAGE_BATCH - rest
+
+    else:
+      num_train_images = IMAGE_BATCH
 
   print("N° Training images to filter: %d" % num_train_images)
 
@@ -1411,7 +1415,7 @@ def singleprocess_apply_filters_to_images(save=True, display=False, html=False, 
 
   print("Time to apply filters to all images: %s\n" % str(t.elapsed()))
 
-def multiprocess_apply_filters_to_images(save=True, display=False, html=False, image_num_list=None, start_ind=None):
+def multiprocess_apply_filters_to_images(save=True, display=False, image_num_list=None, start_ind=None):
   """
   Apply a set of filters to all training images using multiple processes (one process per core).
 
@@ -1464,6 +1468,9 @@ def multiprocess_apply_filters_to_images(save=True, display=False, html=False, i
     end_index = num_process * images_per_process
     start_index = int(start_index)
     end_index = int(end_index)
+    print("N° Process %d" % num_process)
+    print("Start Index %d" % start_index)
+    print("End Index %d\n" % end_index)
 
     if image_num_list is not None:
       sublist = image_num_list[start_index: end_index]
@@ -1486,7 +1493,7 @@ def multiprocess_apply_filters_to_images(save=True, display=False, html=False, i
 
   for result in results:
     result.get()
-    
+
   print("Time to apply filters to all images (multiprocess): %s\n" % str(timer.elapsed()))
 
 if __name__ == "__main__":

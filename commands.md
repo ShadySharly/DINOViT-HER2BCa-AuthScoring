@@ -30,10 +30,7 @@ rsync -av --dry-run . ~/home/DIINF/cperezs/dino/data/GDC_TCGA/image
 # Sync SERVER to ORIGIN
 < rsync -r server/ origin/ >
 rsync -av --dry-run cperezs@tumi.diinf.usach.cl:~/dino/data/GDC_TCGA/image .
-
-
-rsync -av --exclude=~/manifest/ --dry-run cperezs@tumi.diinf.usach.cl:~/DINOViT-HER2BCa-AuthScoring .rsync -av --exclude=~/manifest/ --dry-run cperezs@tumi.diinf.usach.cl:~/DINOViT-HER2BCa-AuthScoring .
-
+rsync -av --exclude=~/manifest/ --dry-run cperezs@tumi.diinf.usach.cl:~/DINOViT-HER2BCa-AuthScoring .
 rsync -av --dry-run cperezs@tumi.diinf.usach.cl:~/dino/data/GDC_TCGA/filter/filter_jpg .
 
 # SERVER path

@@ -1674,7 +1674,7 @@ def dynamic_tile(slide_num, row, col, small_tile_in_tile=False):
   Generate a single tile dynamically based on slide number, row, and column. If more than one tile needs to be
   retrieved dynamically, dynamic_tiles() should be used.
 
-  Args:
+  Args:scor
     slide_num: The slide number.
     row: The row.
     col: The column.
@@ -1820,6 +1820,9 @@ def multiprocess_filtered_images_to_tiles(display=True, save_summary=True, save_
     end_index = num_process * images_per_process
     start_index = int(start_index)
     end_index = int(end_index)
+    print("N° Process %d" % num_process)
+    print("Start Index %d" % start_index)
+    print("End Index %d\n" % end_index)
     
     if image_num_list is not None:
       sublist = image_num_list[start_index: end_index]
@@ -1857,5 +1860,4 @@ if __name__ == "__main__":
   # tile.display_with_histograms()
   # print("WEA  TILES")
   # singleprocess_filtered_images_to_tiles(image_num_list=[5018])
-  # multiprocess_filtered_images_to_tiles(image_num_list=[1491])
-  print("HOLA")
+  multiprocess_filtered_images_to_tiles()
