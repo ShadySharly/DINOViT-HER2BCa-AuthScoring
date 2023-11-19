@@ -13,10 +13,6 @@
 # limitations under the License.
 #
 # ------------------------------------------------------------------------
-
-import sys
-sys.path.insert(0, '..')
-
 import shutil
 import glob
 import math
@@ -1377,34 +1373,3 @@ def slide_info(display_all_properties=False):
   print("  ??x Slides: " + str(obj_pow_other_list) + "\n")
 
   t.elapsed_display()
-
-if __name__ == "__main__":
-
-  #slide_path = get_training_slide_path(1)
-  #print(str(slide_path))
-  #show_slide(slide_number)
-  #print(slide_path)
-  
-  # show_slide(2)
-  # slide_info(display_all_properties=True)
-  # slide_stats()
-
-  # training_slide_to_image(4)
-  # img_path = get_training_image_path(18)
-  # print(str(os.path.isfile(img_path)))
-  # img = open_image(img_path)
-  # img.show()
-
-  #slide_to_scaled_pil_image(18)[0].show()
-  # singleprocess_training_slides_to_images()
-  #multiprocess_training_slides_to_images()
-  #print(ROOT_DIR)
-  #divide_multisample_images()
-  # image_filepath = get_training_image_path(1033)
-  # divide_image(image_filepath, option=0)
-  #get_last_image_number()
-  #restore_image_dataset()
-  #print(get_image_num())
-  image_name = "TCGA-0001-20x-59976x47221-14994x11805.jpg"
-  image_index = get_image_index(image_name)
-  print(image_index)

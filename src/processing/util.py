@@ -13,15 +13,8 @@
 # limitations under the License.
 #
 # ------------------------------------------------------------------------
-
-import sys
-sys.path.insert(0, '..')
-
 import os
-import glob
 import shutil
-from os import path
-import csv
 import datetime
 import numpy as np
 import pandas as pd
@@ -575,28 +568,4 @@ def is_filter_dir(slide_number):
   padded_sl_num = str(slide_number).zfill(4)
   tile_dir_path = os.path.join(FILTER_IMAGE_DIR, padded_sl_num)
   return os.path.isdir(tile_dir_path)
-
-if __name__ == "__main__":
-
-  #manifest_csv = txt_to_csv(MANIFEST_DIR + "/gdc_manifest_3111.txt", MANIFEST_DIR)
-  #csv_to_txt(MANIFEST_DIR + "/gdc_manifest_3111.csv", MANIFEST_DIR)
-  #filter_manifest()
-  #rename_dataset()
-  #rename_wsi()
-  #rename_wsi_dataset()
-  #rename_wsi_dataset()
-  #set_slide_id_to_barcode()
-  #filter_manifest()
-  #move_manifests_to_slides()
-  #rename_slide_dataset()
-  #get_status_slides_downloads(10, IMAGE_DIR)
-  #get_status_slides_downloads(9, IMAGE_DIR)
-  #ver = is_slide_id("TCGA-0019")
-  #print(str(ver))
-  #svs_files = get_svs_files_from_dir(MANIFEST_DIR)
-  #print(svs_files)
-  #add_image_data_row()
-  exists = is_tile_dir(2)
-  print("Tile Exists:" + str(exists))
-
 

@@ -13,10 +13,6 @@
 # limitations under the License.
 #
 # ------------------------------------------------------------------------
-
-import sys
-sys.path.insert(0, '..')
-
 import math
 import multiprocessing
 import numpy as np
@@ -1495,10 +1491,3 @@ def multiprocess_apply_filters_to_images(save=True, display=False, image_num_lis
     result.get()
 
   print("Time to apply filters to all images (multiprocess): %s\n" % str(timer.elapsed()))
-
-if __name__ == "__main__":
-  # slide.training_slide_to_image(2)
-  # singleprocess_apply_filters_to_images(image_num_list=[2], display=True)
-  # singleprocess_apply_filters_to_images()
-  multiprocess_apply_filters_to_images()
-  # apply_filters_to_image_list([1464], True, False)

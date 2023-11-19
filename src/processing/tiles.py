@@ -15,9 +15,6 @@
 # ------------------------------------------------------------------------
 
 # To get around renderer issue on macOS going from Matplotlib image to NumPy image.
-import sys
-sys.path.insert(0, '..')
-
 import matplotlib
 matplotlib.use('Agg')
 
@@ -1854,10 +1851,3 @@ def multiprocess_filtered_images_to_tiles(display=True, save_summary=True, save_
     print("Done tiling slides: %s" % image_nums)
 
   print("Time to generate tile previews (multiprocess): %s\n" % str(timer.elapsed()))
-
-if __name__ == "__main__":
-  # tile = dynamic_tile(2, 29, 16, True)
-  # tile.display_with_histograms()
-  # print("WEA  TILES")
-  # singleprocess_filtered_images_to_tiles(image_num_list=[5018])
-  multiprocess_filtered_images_to_tiles()
