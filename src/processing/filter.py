@@ -197,7 +197,7 @@ def filter_canny(np_img, sigma=1, low_threshold=0, high_threshold=25, output_typ
   return can
 
 
-def mask_percent(np_img):
+def mask_percent(np_img, is_tile):
   """
   Determine the percentage of a NumPy array that is masked (how many of the values are 0 values).
 
@@ -211,13 +211,20 @@ def mask_percent(np_img):
     np_sum = np_img[:, :, 0] + np_img[:, :, 1] + np_img[:, :, 2]
     print("NP SUM: " + str(np_sum))
     print("NP SUM SIZE: " + str(np_sum.size))
-    mask_percentage = 100 - np.count_nonzero(np_sum) / np_sum.size * 100
+    
+    if is_tile:
+      tile_size = ROW_TILE_SIZE * COL_TILE_SIZE
+      mask_percentage = 100 - np.count_nonzero(np_sum) / tile_size * 100
+
+    else:
+      mask_percentage = 100 - np.count_nonzero(np_sum) / np_sum.size * 100
+
   else:
     mask_percentage = 100 - np.count_nonzero(np_img) / np_img.size * 100
   return mask_percentage
 
 
-def tissue_percent(np_img):
+def tissue_percent(np_img, is_tile):
   """
   Determine the percentage of a NumPy array that is tissue (not masked).
 
@@ -227,7 +234,7 @@ def tissue_percent(np_img):
   Returns:
     The percentage of the NumPy array that is tissue.
   """
-  return 100 - mask_percent(np_img)
+  return 100 - mask_percent(np_img, is_tile)
 
 
 def filter_remove_small_objects(np_img, min_size=3000, avoid_overmask=False, overmask_thresh=95, output_type="uint8"):

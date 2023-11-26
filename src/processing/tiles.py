@@ -471,6 +471,9 @@ def summary_and_tiles(slide_num, display, save_summary, save_data, save_top_tile
 
   """
   img_path = slide.get_filter_image_result(slide_num)
+
+  
+
   np_img = slide.open_image_np(img_path) 
   tile_sum = score_tiles(slide_num, np_img)
   print("Slide ID: %s", str(slide_num))
@@ -619,6 +622,7 @@ def score_tiles(slide_num, np_img=None, dimensions=None, small_tile_in_tile=Fals
     o_w, o_h, w, h = dimensions
 
   if np_img is None:
+    img_path = slide.get_filter_image_result(slide_num)
     np_img = slide.open_image_np(img_path)
 
   #row_tile_size = round(ROW_TILE_SIZE / slide.SCALE_FACTOR)  # use round?
@@ -637,7 +641,7 @@ def score_tiles(slide_num, np_img=None, dimensions=None, small_tile_in_tile=Fals
                          scaled_h=h,
                          scaled_tile_w=col_tile_size,
                          scaled_tile_h=row_tile_size,
-                         tissue_percentage=filter.tissue_percent(np_img),
+                         tissue_percentage=filter.tissue_percent(np_img, False),
                          num_col_tiles=num_col_tiles,
                          num_row_tiles=num_row_tiles)
 
@@ -651,7 +655,7 @@ def score_tiles(slide_num, np_img=None, dimensions=None, small_tile_in_tile=Fals
     count += 1  # tile_num
     r_s, r_e, c_s, c_e, r, c = t
     np_tile = np_img[r_s:r_e, c_s:c_e]
-    t_p = filter.tissue_percent(np_tile)
+    t_p = filter.tissue_percent(np_tile, True)
     amount = tissue_quantity(t_p)
     if amount == TissueQuantity.HIGH:
       high += 1
@@ -1414,7 +1418,7 @@ class TileSummary:
   scaled_h = None
   scaled_tile_w = None
   scaled_tile_h = None
-  mask_percentage = None
+  mask_percentage = None # type: ignore
   num_row_tiles = None
   num_col_tiles = None
 
@@ -1761,7 +1765,7 @@ def singleprocess_filtered_images_to_tiles(display, save_summary, save_data, sav
   print("Time to generate tile summaries: %s\n" % str(t.elapsed()))
 
 
-def multiprocess_filtered_images_to_tiles(display=True, save_summary=True, save_data=True, save_top_tiles=True,
+def multiprocess_filtered_images_to_tiles(display=False, save_summary=False, save_data=False, save_top_tiles=True,
                                           image_num_list=None, start_ind=None):
   """
   Generate tile summaries and tiles for all training images using multiple processes (one process per core).
