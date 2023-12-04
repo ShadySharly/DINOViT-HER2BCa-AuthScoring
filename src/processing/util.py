@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 # ------------------------------------------------------------------------
-import sys
 import os
 import shutil
 import datetime
@@ -569,4 +568,30 @@ def is_filter_dir(slide_number):
   padded_sl_num = str(slide_number).zfill(4)
   tile_dir_path = os.path.join(FILTER_IMAGE_DIR, padded_sl_num)
   return os.path.isdir(tile_dir_path)
+
+def merge_directories(src_dirs_path=None, dest_dir_path=None):
+  if (src_dirs_path != None and dest_dir_path != None):
+    dirs_path = os.listdir(src_dirs_path)
+    list(map(lambda src_path: move_single_dir(src_path, dest_dir_path), dirs_path))
+
+  return False
+
+def move_single_dir(src_dir, dest_dir):
+  files = os.listdir(src_dir)
+  
+
+def move_single_slide(src_path):
+  slide_name = os.path.basename(src_path)
+  dest_path = os.path.join(SLIDE_DIR, slide_name)
+
+  if(os.path.isfile(dest_path) == False):
+    shutil.move(src_path, dest_path)
+    print("Moved slide: " + slide_name)
+
+  else:
+    print("Not moved existing slide: " + slide_name)
+
+
+def tiles_summary():
+  return
 

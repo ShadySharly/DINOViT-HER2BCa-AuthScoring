@@ -12,11 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import sys
-sys.path.insert(0, '..')
-
 import argparse
 import os
-import sys
 import datetime
 import time
 import math
@@ -468,11 +465,3 @@ class DataAugmentationDINO(object):
         for _ in range(self.local_crops_number):
             crops.append(self.local_transfo(image))
         return crops
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser('DINO', parents=[get_args_parser()])
-    args = parser.parse_args()
-    print(args)
-    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
-    train_dino(args)
