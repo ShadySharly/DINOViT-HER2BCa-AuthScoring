@@ -10,12 +10,14 @@ from util import *
 from main_dino import *
 
 def main():
-    #multiprocess_filtered_images_to_tiles(start_ind=0)
+    print("SLIDE ID FILTROS FALTANTES")
+    print(str(list_unknow_tiles_dir()))
+    '''
     parser = argparse.ArgumentParser('DINO', parents=[get_args_parser()])
     args = parser.parse_args()
     print(args)
     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
     train_dino(args)
-
+    '''
 if __name__ == "__main__":
     main()

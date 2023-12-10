@@ -2,7 +2,6 @@
 
 ### Conection to Open VPN Usach
 sudo openvpn --config profile-5153.ovpn
-a,59.B,82.c,17
 
 ### Connect to server
 ssh cperezs@tumi.diinf.usach.cl
@@ -48,8 +47,7 @@ Comandos	                    Descripción
 CTRL+a c	                    Crea una nueva ventana
 CTRL+a ”	                    Lista de todas las ventanas creadas.
 CTRL+a a	                    Con este comando puedes eliminar un CTRL+a. Es útil si te equivocas.
-CTRL+a
-CTRL+d                          Deja la sesión en ejecución. 
+CTRL+a+d                          Deja la sesión en ejecución. 
 
 screen -S session1              Crear una nueva sesion
 screen -ls                      Listar las sesiones
