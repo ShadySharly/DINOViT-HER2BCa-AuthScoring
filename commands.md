@@ -9,28 +9,29 @@ ssh cperezs@tumi.diinf.usach.cl
 ### RSYNC COMMANDS
 
 # Check files to Sync
-< rsync -av --dry-run . cperezs@tumi.diinf.usach.cl:~/home/DIINF/cperezs >
-rsync -av --dry-run ./DINOViT-HER2BCa-AuthScoring cperezs@tumi.diinf.usach.cl:
+rsync -av --dry-run <origin> <remote>
 
 # Sync files
-rsync -av  ./DINOViT-HER2BCa-AuthScoring cperezs@tumi.diinf.usach.cl:
+rsync -av <origin> <remote>
 
-# Check Excluding (Exclude more files adding more '--exclude' flags)
-rsync -av --exclude 'manifest' --dry-run cperezs@tumi.diinf.usach.cl:~/DINOViT-HER2BCa-AuthScoring .
+# Check Excluding (Exclude more files or dirs adding more '--exclude' flags)
+rsync -av --exclude --dry-run '<name>' <origin> <remote>
+rsync -av --exclude --dry-run 'data' ./DINOViT-HER2BCa-AuthScoring cperezs@tumi.diinf.usach.cl:
 
 # Sync Excluding
-rsync -av --exclude 'manifest' cperezs@tumi.diinf.usach.cl:~/DINOViT-HER2BCa-AuthScoring .
+rsync -av --exclude '<name>' <origin> <remote>
+rsync -av --exclude 'data' ./DINOViT-HER2BCa-AuthScoring cperezs@tumi.diinf.usach.cl:
 
 # Sync ORIGIN to SERVER 
-< rsync -r origin/ server/ >
-rsync -avr ./DINOViT-HER2BCa-AuthScoring cperezs@tumi.diinf.usach.cl:
-rsync -av --dry-run . ~/home/DIINF/cperezs/dino/data/GDC_TCGA/image
+rsync -av --dry-run ./DINOViT-HER2BCa-AuthScoring cperezs@tumi.diinf.usach.cl:
+rsync -av ./DINOViT-HER2BCa-AuthScoring cperezs@tumi.diinf.usach.cl:
 
 # Sync SERVER to ORIGIN
-< rsync -r server/ origin/ >
-rsync -av --dry-run cperezs@tumi.diinf.usach.cl:~/dino/data/GDC_TCGA/image .
-rsync -av --exclude=~/manifest/ --dry-run cperezs@tumi.diinf.usach.cl:~/DINOViT-HER2BCa-AuthScoring .
-rsync -av --dry-run cperezs@tumi.diinf.usach.cl:~/dino/data/GDC_TCGA/filter/filter_jpg .
+rsync -av --dry-run cperezs@tumi.diinf.usach.cl:~/DINOViT-HER2BCa-AuthScoring .
+rsync -av --dry-run cperezs@tumi.diinf.usach.cl: ./DINOViT-HER2BCa-AuthScoring
+
+rsync -av cperezs@tumi.diinf.usach.cl:~/DINOViT-HER2BCa-AuthScoring .
+rsync -av cperezs@tumi.diinf.usach.cl: ./DINOViT-HER2BCa-AuthScoring
 
 # SERVER path
 cperezs@tumi.diinf.usach.cl:
@@ -47,7 +48,7 @@ Comandos	                    Descripción
 CTRL+a c	                    Crea una nueva ventana
 CTRL+a ”	                    Lista de todas las ventanas creadas.
 CTRL+a a	                    Con este comando puedes eliminar un CTRL+a. Es útil si te equivocas.
-CTRL+a+d                          Deja la sesión en ejecución. 
+CTRL+a d                          Deja la sesión en ejecución. 
 
 screen -S session1              Crear una nueva sesion
 screen -ls                      Listar las sesiones
