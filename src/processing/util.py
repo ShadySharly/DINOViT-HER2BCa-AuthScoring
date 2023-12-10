@@ -701,7 +701,7 @@ def list_unknown_tiles_dir():
     filtered_image_path_list = list(
         map(
             lambda src_file: get_slide_id_from_file_name(src_file).zfill(4),
-            os.listdir(FILTER_DIR),
+            os.listdir(FILTER_IMAGE_DIR),
         )
     )
     tiled_image_dir_list = list(
@@ -712,8 +712,8 @@ def list_unknown_tiles_dir():
     )
     return list(
         filter(
-            lambda silde_id: silde_id not in filtered_image_path_list,
-            tiled_image_dir_list,
+            lambda silde_id: silde_id not in tiled_image_dir_list,
+            filtered_image_path_list,
         )
     )
 
