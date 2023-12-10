@@ -15,8 +15,8 @@ rsync -av --dry-run <origin> <remote>
 rsync -av <origin> <remote>
 
 # Check Excluding (Exclude more files or dirs adding more '--exclude' flags)
-rsync -av --exclude --dry-run '<name>' <origin> <remote>
-rsync -av --exclude --dry-run 'data' ./DINOViT-HER2BCa-AuthScoring cperezs@tumi.diinf.usach.cl:
+rsync -av --exclude '<name>' --dry-run  <origin> <remote>
+rsync -av --exclude 'data' --dry-run ./DINOViT-HER2BCa-AuthScoring cperezs@tumi.diinf.usach.cl:
 
 # Sync Excluding
 rsync -av --exclude '<name>' <origin> <remote>
@@ -29,6 +29,7 @@ rsync -av ./DINOViT-HER2BCa-AuthScoring cperezs@tumi.diinf.usach.cl:
 # Sync SERVER to ORIGIN
 rsync -av --dry-run cperezs@tumi.diinf.usach.cl:~/DINOViT-HER2BCa-AuthScoring .
 rsync -av --dry-run cperezs@tumi.diinf.usach.cl: ./DINOViT-HER2BCa-AuthScoring
+
 
 rsync -av cperezs@tumi.diinf.usach.cl:~/DINOViT-HER2BCa-AuthScoring .
 rsync -av cperezs@tumi.diinf.usach.cl: ./DINOViT-HER2BCa-AuthScoring
