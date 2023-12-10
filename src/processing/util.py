@@ -700,14 +700,14 @@ def move_single_slide(src_path):
 def list_unknown_tiles_dir():
     filtered_image_path_list = list(
         map(
-            lambda src_file: get_slide_id_from_file_name(src_file).zfill(4),
+            lambda src_file: get_slide_id_from_file_name(src_file).split('-')[1],
             os.listdir(FILTER_IMAGE_DIR),
         )
     )
     tiled_image_dir_list = list(
         map(
-            lambda src_file: get_slide_id_from_file_name(src_file).zfill(4),
-            os.listdir(TOP_TILES_DIR),
+            lambda src_file: os.path.basename(src_file),
+            os.listdir(TILE_IMAGE_DIR),
         )
     )
     return list(
