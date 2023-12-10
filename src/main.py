@@ -11,7 +11,7 @@ from main_dino import *
 
 def main():
     print("SLIDE ID FILTROS FALTANTES")
-    print(str(list_unknow_tiles_dir()))
+    print(str(list_unknown_tiles_dir()))
     '''
     parser = argparse.ArgumentParser('DINO', parents=[get_args_parser()])
     args = parser.parse_args()

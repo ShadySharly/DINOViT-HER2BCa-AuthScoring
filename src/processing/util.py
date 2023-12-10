@@ -697,7 +697,7 @@ def move_single_slide(src_path):
         print("Not moved existing slide: " + slide_name)
 
 
-def list_unknow_tiles_dir():
+def list_unknown_tiles_dir():
     filtered_image_path_list = list(
         map(
             lambda src_file: get_slide_id_from_file_name(src_file).zfill(4),
