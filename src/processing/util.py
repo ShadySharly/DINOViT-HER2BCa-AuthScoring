@@ -14,11 +14,15 @@
 #
 # ------------------------------------------------------------------------
 import os
+import csv
+import glob
+import random
 import shutil
+import pathlib
 import datetime
-from tkinter import TOP
 import numpy as np
 import pandas as pd
+
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from metadata import *
@@ -134,8 +138,8 @@ def display_img(
     if text is not None:
         font = ImageFont.truetype(font_path, size)
         if bg:
-            (x, y) = draw.textsize(text, font)
-            draw.rectangle([(0, 0), (x + 5, y + 4)], fill=background, outline=border)
+            (x, y) = draw.textsize(text, font)  # type: ignore
+            draw.rectangle([(0, 0), (x + 5, y + 4)], fill=background, outline=border)  # type: ignore
         draw.text((2, 0), text, color, font=font)
     result.show()
 
@@ -173,20 +177,6 @@ class Time:
         self.end = datetime.datetime.now()
         time_elapsed = self.end - self.start
         return time_elapsed
-
-
-def txt_to_csv(file_path, dest_path):
-    if os.path.exists(file_path):
-        if os.path.exists(dest_path):
-            file_name = Path(file_path).stem
-            txt_file = pd.read_csv(file_path, delimiter="\t")
-            return txt_file.to_csv(dest_path + "/" + file_name + ".csv", index=None)
-
-        print("No dest_path exists")
-        return False
-
-    print("No file_path exists")
-    return False
 
 
 def filter_manifest():
@@ -382,6 +372,7 @@ def get_slide_name(slide_id=None, slide_barcode=None):
     Returns:
       NumPy array representing an RGB image with mask applied.
     """
+    slide_row = ""
     brca_file = pd.read_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
     if slide_id != None:
         slide_row = brca_file.loc[brca_file["slide_id"] == slide_id]
@@ -389,7 +380,7 @@ def get_slide_name(slide_id=None, slide_barcode=None):
     elif slide_barcode != None:
         slide_row = brca_file.loc[brca_file["slide_barcode"] == slide_barcode]
 
-    slide_name = slide_row.iloc[0]["slide_name"]
+    slide_name = slide_row.iloc[0]["slide_name"]  # type: ignore
     return slide_name
 
 
@@ -404,6 +395,7 @@ def get_slide_barcode(slide_id=None, slide_name=None):
     Returns:
       NumPy array representing an RGB image with mask applied.
     """
+    slide_row = ""
     brca_file = pd.read_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
     if slide_id != None:
         slide_row = brca_file.loc[brca_file["slide_id"] == slide_id]
@@ -411,7 +403,7 @@ def get_slide_barcode(slide_id=None, slide_name=None):
     elif slide_name != None:
         slide_row = brca_file.loc[brca_file["slide_name"] == slide_name]
 
-    slide_barcode = slide_row.iloc[0]["slide_barcode"]
+    slide_barcode = slide_row.iloc[0]["slide_barcode"]  # type: ignore
     return slide_barcode
 
 
@@ -441,7 +433,7 @@ def is_slide_in_manifest(
         slide_name = get_slide_name(slide_barcode)
 
     for row in manifest_row_list:
-        if slide_name in row:
+        if slide_name != None and slide_name in row:
             return True
     return False
 
@@ -638,7 +630,7 @@ def add_image_data_row(
     slide_id=None, slide_barcode=None, slide_name=None, slide_id_origin=None
 ):
     brca_file = pd.read_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
-    brca_file.loc[len(brca_file)] = [
+    brca_file.loc[len(brca_file)] = [  # type: ignore
         slide_id,
         slide_barcode,
         slide_name,
@@ -685,22 +677,10 @@ def move_single_dir(src_dir, dest_dir):
     files = os.listdir(src_dir)
 
 
-def move_single_slide(src_path):
-    slide_name = os.path.basename(src_path)
-    dest_path = os.path.join(SLIDE_DIR, slide_name)
-
-    if os.path.isfile(dest_path) == False:
-        shutil.move(src_path, dest_path)
-        print("Moved slide: " + slide_name)
-
-    else:
-        print("Not moved existing slide: " + slide_name)
-
-
 def list_unknown_tiles_dir():
     filtered_image_path_list = list(
         map(
-            lambda src_file: get_slide_id_from_file_name(src_file).split('-')[1],
+            lambda src_file: get_slide_id_from_file_name(src_file).split("-")[1],
             os.listdir(FILTER_IMAGE_DIR),
         )
     )
@@ -717,6 +697,5 @@ def list_unknown_tiles_dir():
         )
     )
 
-
-def tiles_summary():
+def create_tiles_summary():
     return

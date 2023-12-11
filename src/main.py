@@ -7,6 +7,7 @@ from tiles import *
 from filter import *
 from slide import *
 from util import *
+from part import *
 from main_dino import *
 
 def main():

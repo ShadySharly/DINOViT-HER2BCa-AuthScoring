@@ -1,38 +1,39 @@
-from __future__ import with_statement
-import pandas as pd
 import csv
-import pathlib
-import random
 import glob
 import random
+import pathlib
+from metadata import *
 
 def createNamesFile():
-    namesFile = open("../ChileanDatasets/gsIDs.txt","w+")
+    namesFile = open("../ChileanDatasets/gsIDs.txt", "w+")
     workingDir = "../ChileanDatasets/Normal/"
     for name in glob.glob(workingDir + "*"):
         nameID = pathlib.Path(name)
         nameID = nameID.stem
-        namesFile.write("%s\n"% nameID)
+        namesFile.write("%s\n" % nameID)
     namesFile.close()
-    
 
-def createWSIList(wsiFileName = "../ChileanDatasets/wsiIDs.txt"):
+
+def createWSIList(wsiFileName="../ChileanDatasets/wsiIDs.txt"):
     my_file = open(wsiFileName, "r")
     data = my_file.read()
     data_into_list = data.split("\n")
     my_file.close()
     return data_into_list
 
-def createGSList(wsiFileName = "../ChileanDatasets/gsIDs.txt"):
+
+def createGSList(wsiFileName="../ChileanDatasets/gsIDs.txt"):
     my_file = open(wsiFileName, "r")
     data = my_file.read()
     data_into_list = data.split("\n")
     my_file.close()
     return data_into_list
+
 
 def createPartitions():
     # Counts the number of aparitions of every wsi into the evaluation dataset (wsiEval)
     wsiEvalCount = [0] * 30
+    partitions = []
     wsiList = createWSIList()
     random.shuffle(wsiList)
 
@@ -42,24 +43,19 @@ def createPartitions():
         wsiTrain = []
         wsiEval = []
         partition = []
-        
+
         for p in range(10):
-            #print("PARTICION %d\n" %p)
             random.seed()
             wsiListRand = wsiList.copy()
             random.shuffle(wsiListRand)
-            wsiTrain = wsiListRand[0: 21]
-            wsiEval = wsiListRand[21: 30]
+            wsiTrain = wsiListRand[0:21]
+            wsiEval = wsiListRand[21:30]
             partition = [wsiTrain, wsiEval]
             partitions.append(partition)
             addWSICounter(wsiList, wsiEvalCount, wsiEval)
-            #print(' '.join(wsiTrain) + "\n")
-            #print(' '.join(wsiEval) + "\n")
-
-        #print(' '.join(wsiListRand))    
-        #print(' '.join(map(str, wsiEvalCount)))
 
     return partitions
+
 
 def invalidPartitions(wsiEvalCount):
     for wsiCount in wsiEvalCount:
@@ -68,24 +64,27 @@ def invalidPartitions(wsiEvalCount):
 
     return False
 
+
 def addWSICounter(wsiList, wsiEvalCount, wsiEval):
     wsiIndex = 0
     for wsi in wsiList:
         if wsi in wsiEval:
-            wsiEvalCount[wsiIndex]+=1
-        wsiIndex+=1
+            wsiEvalCount[wsiIndex] += 1
+        wsiIndex += 1
+
 
 def getGSFromWSIId(wsiId, gsIDslist):
-    gsBelongingToWSI = list(filter(lambda gs : wsiId in gs, gsIDslist))
-    print("WSI ID: %s\n" %wsiId)
-    print('\n'.join(gsBelongingToWSI))
+    gsBelongingToWSI = list(filter(lambda gs: wsiId in gs, gsIDslist))
+    print("WSI ID: %s\n" % wsiId)
+    print("\n".join(gsBelongingToWSI))  # type: ignore
     return gsBelongingToWSI
+
 
 def createPartitionsCSV(partitions):
     gsIDsList = createGSList()
-    header = ['partition', 'set', "patient", "id"]
-    
-    with open('../ChileanDatasets/partitions.csv', 'w') as file:
+    header = ["partition", "set", "patient", "id"]
+
+    with open("../ChileanDatasets/partitions.csv", "w") as file:
         writer = csv.writer(file)
         writer.writerow(header)
         partID = 1
@@ -95,10 +94,12 @@ def createPartitionsCSV(partitions):
             for set in partition:
                 for wsiID in set:
                     gs_of_wsi = getGSFromWSIId(wsiID, gsIDsList)
-                    list(map(lambda gsID : writer.writerow([partID, setID, wsiID, gsID]), gs_of_wsi))
+                    list(
+                        map(
+                            lambda gsID: writer.writerow([partID, setID, wsiID, gsID]),
+                            gs_of_wsi,
+                        )
+                    )
 
                 setID = "evaluation"
-            partID+=1
-
-if __name__ == '__main__':
-    print("part_utils")
+            partID += 1
