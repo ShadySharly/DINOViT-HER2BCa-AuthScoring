@@ -17,10 +17,13 @@ rsync -av <origin> <remote>
 # Check Excluding (Exclude more files or dirs adding more '--exclude' flags)
 rsync -av --exclude '<name>' --dry-run  <origin> <remote>
 rsync -av --exclude 'data' --dry-run ./DINOViT-HER2BCa-AuthScoring cperezs@tumi.diinf.usach.cl:
+rsync -av --exclude 'data' --dry-run cperezs@tumi.diinf.usach.cl:~/DINOViT-HER2BCa-AuthScoring .
 
 # Sync Excluding
 rsync -av --exclude '<name>' <origin> <remote>
 rsync -av --exclude 'data' ./DINOViT-HER2BCa-AuthScoring cperezs@tumi.diinf.usach.cl:
+rsync -av --exclude 'data' cperezs@tumi.diinf.usach.cl:~/DINOViT-HER2BCa-AuthScoring .
+
 
 # Sync ORIGIN to SERVER 
 rsync -av --dry-run ./DINOViT-HER2BCa-AuthScoring cperezs@tumi.diinf.usach.cl:

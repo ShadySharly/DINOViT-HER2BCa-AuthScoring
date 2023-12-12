@@ -1,5 +1,6 @@
 import sys, os
 from metadata import *
+
 sys.path.append(os.path.join(sys.path[0], PROCESSING))
 sys.path.append(os.path.join(sys.path[0], TRAINING))
 
@@ -10,15 +11,17 @@ from util import *
 from part import *
 from main_dino import *
 
+
 def main():
-    print("SLIDE ID FILTROS FALTANTES")
-    print(str(list_unknown_tiles_dir()))
-    '''
+    #create_tiles_overall()
+    create_tiles_overall()
+    """
     parser = argparse.ArgumentParser('DINO', parents=[get_args_parser()])
     args = parser.parse_args()
     print(args)
     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
     train_dino(args)
-    '''
+    """
+
 if __name__ == "__main__":
     main()

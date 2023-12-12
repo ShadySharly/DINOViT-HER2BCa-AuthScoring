@@ -697,5 +697,102 @@ def list_unknown_tiles_dir():
         )
     )
 
-def create_tiles_summary():
-    return
+
+def create_tiles_overall():
+    """
+    Creates a CSV file with a tile overall summary, including all patients and their correspondent tiles generated, and more detailed tile information.
+    With X e |N : {1 -> {X}} == {Y}
+        patient_id ( TCGA-XXXX )
+        tile_id    ( TCGA-XXXX-{Y} )
+        tile_name  ( TCGA-XXXX-tile-r{Y}-c{Y}-x{Y}-y{Y}-w{Y}-h{Y} )
+        row        ( {Y} )
+        col        ( {Y} )
+        x_axis     ( {Y} )
+        y_axis     ( {Y} )
+        width      ( {Y} )
+        height     ( {Y} )
+
+    Args:
+    arg: Argument description
+
+    returns:
+    Returns description
+    """
+    # Nombre del archivo CSV
+    file_path = os.path.join(TILE_DIR, TILE_OVERALL_CSV)
+
+    # Datos iniciales
+    header = [
+        [
+            "patient_id",
+            "tile_id",
+            "tile_name",
+            "row",
+            "col",
+            "x_axis",
+            "y_axis",
+            "width",
+            "height",
+        ],
+    ]
+
+    # Escribir en el archivo CSV
+    with open(file_path, "w", newline="") as csv_file:
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerows(header)
+        list(
+            map(
+                lambda tile_row: csv_writer.writerows(tile_row),
+                create_tile_overall_rows(),
+            )
+        )
+
+    print(f"File {file_path} has been created with initial data")
+
+
+def create_tile_overall_rows():
+    overall_rows_list = []
+    tile_id_number = autoincremental_generator()
+    for root, dirs, files in os.walk(TILE_IMAGE_DIR):
+        for dir in dirs:
+            patient_tile_paths = os.listdir(os.path.join(root, dir))
+            patient_tile_rows = list(
+                map(
+                    lambda tile_path: create_tile_single_row(
+                        tile_path, next(tile_id_number)
+                    ),
+                    patient_tile_paths,
+                )
+            )
+            overall_rows_list.append(patient_tile_rows)
+            tile_id_number.send(True)
+    return overall_rows_list
+
+
+def autoincremental_generator():
+    contador = 1
+    while True:
+        reset = yield contador
+        if reset:
+            contador = 0
+        else:
+            contador += 1
+
+
+def create_tile_single_row(tile_path, tile_id_number):
+    tile_name, extension = os.path.splitext(os.path.basename(tile_path))
+    tile_row = tile_name.split("-")
+    patient_id = tile_row[0] + "-" + tile_row[1]
+    tile_id = patient_id + "-" + str(tile_id_number)
+    del tile_row[0:3]
+    tile_row.insert(0, patient_id)
+    tile_row.insert(1, tile_id)
+    tile_row.insert(2, tile_name)
+    tile_row[3] = tile_row[3][1:]
+    tile_row[4] = tile_row[4][1:]
+    tile_row[5] = tile_row[5][1:]
+    tile_row[6] = tile_row[6][1:]
+    tile_row[7] = tile_row[7][1:]
+    tile_row[8] = tile_row[8][1:]
+
+    return tile_row

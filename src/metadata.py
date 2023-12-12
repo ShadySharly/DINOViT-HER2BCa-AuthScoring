@@ -70,7 +70,7 @@ FONT = "font"
 MANIFEST = "manifest"
 SRC = "src"
 
-ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
+ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
 DATA_DIR = os.path.join(ROOT_DIR, DATA)
 FONT_DIR = os.path.join(ROOT_DIR, FONT)
 MANIFEST_DIR = os.path.join(ROOT_DIR, MANIFEST)
@@ -124,6 +124,9 @@ TILE_DIR = os.path.join(GDC_TCGA_DIR, TILE)
 TILE_SUFFIX = "tile"
 TILE_DATA_SUFFIX = "tile_data"
 TILE_SUMMARY_SUFFIX = "tile_summary"
+TILE_OVERALL_SUFFIX = "tile_overall"
+TILE_SUMMARY_CSV = TILE_SUMMARY_SUFFIX + DOT + CSV
+TILE_OVERALL_CSV = TILE_OVERALL_SUFFIX + DOT + CSV
 TOP_TILES_SUFFIX = "top_tile_summary"
 TILE_SUMMARY_PAGINATION_SIZE = 50
 TILE_SUMMARY_PAGINATE = True
@@ -132,18 +135,20 @@ TILE_DATA_DIR = os.path.join(TILE_DIR, "tile_data")
 TILE_SUMMARY_DIR = os.path.join(TILE_DIR, "tile_summary_" + JPG)
 TILE_SUMMARY_ON_ORIGINAL_DIR = os.path.join(TILE_DIR, "tile_summary_on_original_" + JPG)
 TILE_SUMMARY_THUMBNAIL_DIR = os.path.join(TILE_DIR, "tile_summary_thumbnail_" + JPG)
-TILE_SUMMARY_ON_ORIGINAL_THUMBNAIL_DIR = os.path.join(TILE_DIR, "tile_summary_on_original_thumbnail_" + JPG)
+TILE_SUMMARY_ON_ORIGINAL_THUMBNAIL_DIR = os.path.join(
+    TILE_DIR, "tile_summary_on_original_thumbnail_" + JPG
+)
 TILE_IMAGE_DIR = os.path.join(TILE_DIR, "tiles_" + JPG)
 TOP_TILES_DIR = os.path.join(TILE_DIR, TOP_TILES_SUFFIX + "_" + JPG)
 TOP_TILES_THUMBNAIL_DIR = os.path.join(TILE_DIR, TOP_TILES_SUFFIX + "_thumbnail_" + JPG)
-TOP_TILES_ON_ORIGINAL_DIR = os.path.join(TILE_DIR, TOP_TILES_SUFFIX + "_on_original_" + JPG)
-TOP_TILES_ON_ORIGINAL_THUMBNAIL_DIR = os.path.join(TILE_DIR,
-                                                   TOP_TILES_SUFFIX + "_on_original_thumbnail_" + JPG)
+TOP_TILES_ON_ORIGINAL_DIR = os.path.join(
+    TILE_DIR, TOP_TILES_SUFFIX + "_on_original_" + JPG
+)
+TOP_TILES_ON_ORIGINAL_THUMBNAIL_DIR = os.path.join(
+    TILE_DIR, TOP_TILES_SUFFIX + "_on_original_thumbnail_" + JPG
+)
 TILE_SUMMARY_HTML_DIR = TILE_DIR
 
 ## FONTS ________________________________
 FONT_PATH = os.path.join(FONT_DIR, "Arial Bold.ttf")
 SUMMARY_TITLE_FONT_PATH = os.path.join(FONT_DIR, "Courier New Bold.ttf")
-
-
-
