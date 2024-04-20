@@ -796,3 +796,77 @@ def create_tile_single_row(tile_path, tile_id_number):
     tile_row[8] = tile_row[8][1:]
 
     return tile_row
+
+
+def create_tiles_summary():
+    patient_dictionary = {}
+    file_path = os.path.join(TILE_DIR, TILE_SUMMARY_CSV)
+
+    # Recorrer el directorio y sus subdirectorios
+    for root, dirs, files in os.walk(TILE_IMAGE_DIR):
+        # Calcular la cantidad de archivos en la carpeta actual
+        patient_number = os.path.basename(root)
+        if patient_number != "tiles_jpg":
+            tile_count = len(files)
+            # Almacenar la cantidad de archivos en el diccionario
+            patient_dictionary[patient_number] = tile_count
+
+    # Crear un archivo CSV para almacenar los resultados
+    with open(file_path, "w", newline="") as csvfile:
+        # Crear un objeto escritor CSV
+        csv_writer = csv.writer(csvfile)
+
+        # Escribir la cabecera del CSV
+        csv_writer.writerow(["patient_id", "tile_count"])
+
+        # Escribir los datos en el CSV
+        for patient_number, tile_count in patient_dictionary.items():
+            patient_id = SLIDE_PREFIX + patient_number
+            csv_writer.writerow([patient_id, tile_count])
+
+        # Calcular el total de archivos
+        total_count = sum(patient_dictionary.values())
+
+        # Escribir la fila de total
+        csv_writer.writerow(["total", total_count])
+
+    print(
+        f'Se ha creado el archivo CSV "resumen_archivos.csv" con el resumen de archivos.'
+    )
+
+
+def rename_gdc_tile_dataset():
+    # Ruta del archivo CSV
+    csv_path = os.path.join(TILE_DIR, TILE_OVERALL_CSV)
+
+    # Ruta del directorio donde se encuentran los archivos
+    dir_path = "ruta/del/directorio"
+
+    # Leer el CSV con pandas
+    df = pd.read_csv(csv_path)
+
+    # Iterar sobre las filas del DataFrame
+    for index, row in df.iterrows():
+        # Obtener el nombre actual y el nuevo nombre
+        nombre_actual = os.path.join(dir_path, row["name"])
+        nuevo_nombre = os.path.join(dir_path, str(row["id"]))
+
+        # Renombrar el archivo si existe
+        if os.path.exists(nombre_actual):
+            os.rename(nombre_actual, nuevo_nombre)
+            print(f"Archivo renombrado: {nombre_actual} -> {nuevo_nombre}")
+        else:
+            print(f"Archivo no encontrado: {nombre_actual}")
+
+    if is_slide_name(slide_name):
+        brca_file = pd.read_csv(GDC_TCGA_DIR + "/TCGA-BRCA_Paper.csv", delimiter=";")
+        slide_row = brca_file.loc[
+            brca_file["slide_name"] == os.path.splitext(slide_name)[0]
+        ]
+        slide_id = slide_row.iloc[0]["slide_id"]
+
+        src_name = SLIDE_DIR + "/" + slide_name
+        dest_name = SLIDE_DIR + "/" + slide_id + ".svs"
+
+        os.rename(src_name, dest_name)
+        print(src_name + " TO " + dest_name)

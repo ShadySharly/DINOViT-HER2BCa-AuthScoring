@@ -1,11 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -131,6 +131,21 @@ def get_args_parser():
 
 
 def train_dino(args):
+    # =============================================================
+    # ============ It initializes distributed training ============
+    # =============================================================
+
+    """
+        * Initialize distributed training: The function initializes distributed training using the
+        utils.init_distributed_mode function, which sets up the distributed environment and initializes the process group.
+
+        * Fix random seeds: The function fixes the random seeds for reproducibility using the
+        utils.fix_random_seeds function.
+
+        * Initialize cudnn: The function initializes the CUDA Deep Neural Network library (cuDNN) using the
+        cudnn.benchmark function.
+    """
+
     utils.init_distributed_mode(args)
     utils.fix_random_seeds(args.seed)
     print("git:\n  {}\n".format(utils.get_sha()))
@@ -138,11 +153,22 @@ def train_dino(args):
     cudnn.benchmark = True
 
     # ============ preparing data ... ============
+
+    """
+        Prepare data: The function prepares the data loader using the DataAugmentationDINO
+        class and the datasets.ImageFolder class from torchvision. It also sets up the distributed
+        sampler using the torch.utils.data.DistributedSampler class.
+    """
     transform = DataAugmentationDINO(
         args.global_crops_scale,
         args.local_crops_scale,
         args.local_crops_number,
     )
+
+    # ==================================================
+    # ============ prepares the data loader ============
+    # ==================================================
+
     dataset = datasets.ImageFolder(root=args.data_path, transform=transform)
     sampler = torch.utils.data.DistributedSampler(dataset, shuffle=True) # type: ignore
     data_loader = torch.utils.data.DataLoader( # type: ignore
@@ -155,7 +181,16 @@ def train_dino(args):
     )
     print(f"Data loaded: there are {len(dataset)} images.")
 
-    # ============ building student and teacher networks ... ============
+    # =================================================================
+    # ============ builds the student and teacher networks ============
+    # =================================================================
+
+    """
+        Build student and teacher networks: The function builds the student and teacher networks
+        using the vits and torchvision_models modules. It also sets up the multi-crop wrapper 
+        using the utils.MultiCropWrapper class.
+    """
+
     # we changed the name DeiT-S for ViT-S to avoid confusions
     args.arch = args.arch.replace("deit", "vit")
     # if the network is a Vision Transformer (i.e. vit_tiny, vit_small, vit_base)
@@ -191,7 +226,7 @@ def train_dino(args):
         teacher,
         DINOHead(embed_dim, args.out_dim, args.use_bn_in_head),
     )
-    # move networks to gpu
+    # ============ move networks to gpu ============
     student, teacher = student.cuda(), teacher.cuda()
     # synchronize batch norms (if any)
     if utils.has_batchnorms(student):
@@ -212,7 +247,15 @@ def train_dino(args):
         p.requires_grad = False
     print(f"Student and Teacher are built: they are both {args.arch} network.")
 
-    # ============ preparing loss ... ============
+    # =================================================
+    # ============ preparing loss function ============
+    # =================================================
+
+    """
+        Set up loss function: The function sets up the loss function using the DINOLoss class.
+        It computes the cross-entropy loss between the softmax outputs of the student
+        and teacher networks, with a temperature parameter to control the softness of the targets.
+    """
     dino_loss = DINOLoss(
         args.out_dim,
         args.local_crops_number + 2,  # total number of crops = 2 global crops + local_crops_number
@@ -222,7 +265,13 @@ def train_dino(args):
         args.epochs,
     ).cuda()
 
+    # =================================================
     # ============ preparing optimizer ... ============
+    # =================================================
+
+    """
+        Set up optimizer: The function sets up the optimizer using the torch.optim.AdamW class or other optimizers.
+    """
     params_groups = utils.get_params_groups(student)
     if args.optimizer == "adamw":
         optimizer = torch.optim.AdamW(params_groups)  # to use with ViTs
@@ -235,7 +284,14 @@ def train_dino(args):
     if args.use_fp16:
         fp16_scaler = torch.cuda.amp.GradScaler()
 
+    # =============================================
     # ============ init schedulers ... ============
+    # =============================================
+
+    """
+        Set up schedulers: The function sets up the learning rate scheduler using the utils.cosine_scheduler function
+        and the weight decay scheduler using the utils.cosine_scheduler function.
+    """
     lr_schedule = utils.cosine_scheduler(
         args.lr * (args.batch_size_per_gpu * utils.get_world_size()) / 256.,  # linear scaling rule
         args.min_lr,
@@ -252,7 +308,14 @@ def train_dino(args):
                                                args.epochs, len(data_loader))
     print(f"Loss, optimizer and schedulers ready.")
 
+    # ========================================================
     # ============ optionally resume training ... ============
+    # ========================================================
+
+    """
+        Optionally resume training: The function optionally resumes training from a checkpoint using the
+        utils.restart_from_checkpoint function.
+    """
     to_restore = {"epoch": 0}
     utils.restart_from_checkpoint(
         os.path.join(args.output_dir, "checkpoint.pth"),
@@ -263,8 +326,16 @@ def train_dino(args):
         fp16_scaler=fp16_scaler,
         dino_loss=dino_loss,
     )
-    start_epoch = to_restore["epoch"]
 
+    # ========================================================
+    # ================ Start the Training ====================
+    # ========================================================
+
+    '''
+        Start training: The function starts training the model using the train_one_epoch function.
+    '''
+
+    start_epoch = to_restore["epoch"]
     start_time = time.time()
     print("Starting DINO training !")
     for epoch in range(start_epoch, args.epochs):
@@ -417,8 +488,13 @@ class DINOLoss(nn.Module):
         self.center = self.center * self.center_momentum + batch_center * (1 - self.center_momentum)
 
 # Este weon transforma las imagenes a globales y locales ctm
-#####################################################################################################
-#####################################################################################################
+
+"""
+    defines the data augmentation pipeline used for training the DINO model.
+    It applies random resized cropping, horizontal flipping, color jittering,
+    Gaussian blurring, and solarization to the input images, generating both
+    global and local views for self-supervised learning.
+"""
 class DataAugmentationDINO(object):
     def __init__(self, global_crops_scale, local_crops_scale, local_crops_number):
         flip_and_color_jitter = transforms.Compose([

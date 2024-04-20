@@ -1,7 +1,58 @@
 import os
 from PIL import Image
 
+## EXTENSIONS ____________________________________
+SVS = "svs"
+JPG = "jpg"
+PNG = "png"
+TXT = "txt"
+CSV = "csv"
+DOT = "."
+UND = "_"
+IMAGE_EXT = JPG
+
+### ROOT VARIABLES AND PATHS #############################################################################################
+DATA = "data"
+FONT = "font"
+MANIFEST = "manifest"
+SRC = "src"
+
+ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
+DATA_DIR = os.path.join(ROOT_DIR, DATA)
+FONT_DIR = os.path.join(ROOT_DIR, FONT)
+MANIFEST_DIR = os.path.join(ROOT_DIR, MANIFEST)
+SRC_DIR = os.path.join(ROOT_DIR, SRC)
+
+### SUBDIR VARIABLES AND PATHS ############################################################################################
+GDC_TCGA = "GDC_TCGA"
+UCH_CPDAI = "UCH_CPDAI"
+CKPT = "ckpt"
+FILTER = "filter"
+IMAGE = "image"
+IMAGE_MULTI = "image_multi"
+SLIDE = "slide"
+THUMBNAIL = "thumbnail"
+TILE = "tile"
+PROCESSING = "processing"
+TRAINING = "training"
+CKPT_DIR = os.path.join(DATA_DIR, CKPT)
+GDC_TCGA_DIR = os.path.join(DATA_DIR, GDC_TCGA)
+UCH_CPDAI_DIR = os.path.join(DATA_DIR, UCH_CPDAI)
+
+### PARTITIONING PARAMETERS ###############################################################################################
+PARTITION = "partition"
+GDC_TCGA_PARTITION_DIR = os.path.join(GDC_TCGA_DIR, PARTITION)
+UCH_CPDAI_PARTITION_DIR = os.path.join(UCH_CPDAI_DIR, PARTITION)
+PARTITION_CSV = os.path.join(PARTITION, DOT, CSV)
+PARTITION_NUM = 10
+TRAIN_RATIO = 0.7
+EVAL_RATIO = 1 - TRAIN_RATIO
+
 ### TRAINING PARAMETERS ###################################################################################################
+
+
+### EVALUATION PARAMETERS #################################################################################################
+
 
 ### PRE-PROCESSING PARAMETERS #############################################################################################
 SLIDE_PREFIX = "TCGA-"
@@ -55,45 +106,7 @@ TILE_TEXT_H_BORDER = 4
 HSV_PURPLE = 270
 HSV_PINK = 330
 
-## EXTENSIONS ____________________________________
-SVS = "svs"
-JPG = "jpg"
-PNG = "png"
-TXT = "txt"
-CSV = "csv"
-DOT = "."
-IMAGE_EXT = JPG
-
-### ROOT VARIABLES AND PATHS #############################################################################################
-DATA = "data"
-FONT = "font"
-MANIFEST = "manifest"
-SRC = "src"
-
-ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
-DATA_DIR = os.path.join(ROOT_DIR, DATA)
-FONT_DIR = os.path.join(ROOT_DIR, FONT)
-MANIFEST_DIR = os.path.join(ROOT_DIR, MANIFEST)
-SRC_DIR = os.path.join(ROOT_DIR, SRC)
-
-### SUBDIR VARIABLES AND PATHS ############################################################################################
-GDC_TCGA = "GDC_TCGA"
-UCH_CPDAI = "UCH_CPDAI"
-CKPT = "ckpt"
-FILTER = "filter"
-IMAGE = "image"
-IMAGE_MULTI = "image_multi"
-SLIDE = "slide"
-THUMBNAIL = "thumbnail"
-TILE = "tile"
-PROCESSING = "processing"
-TRAINING = "training"
-
-## CHECKPOINTS AND IMAGE ________________________________
-CKPT_DIR = os.path.join(DATA_DIR, CKPT)
-GDC_TCGA_DIR = os.path.join(DATA_DIR, GDC_TCGA)
-UCH_CPDAI_DIR = os.path.join(DATA_DIR, UCH_CPDAI)
-
+## CKPTS AND IMAGE ________________________________
 GDC_TCGA_IMAGE_DIR = os.path.join(GDC_TCGA_DIR, IMAGE)
 GDC_TCGA_MULTI_IMAGE_DIR = os.path.join(GDC_TCGA_DIR, IMAGE_MULTI)
 GDC_TCGA_THUMBNAIL_DIR = os.path.join(GDC_TCGA_DIR, THUMBNAIL)

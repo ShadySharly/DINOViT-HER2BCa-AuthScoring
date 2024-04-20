@@ -1,3 +1,4 @@
+import os
 import csv
 import glob
 import random
@@ -103,3 +104,35 @@ def createPartitionsCSV(partitions):
 
                 setID = "evaluation"
             partID += 1
+
+
+def create_gdc_partitions():
+    
+
+    
+    for partition_id in range(1, PARTITION_NUM + 1):
+        patient_dirs = os.listdir(TILE_IMAGE_DIR)
+        csv_data = []
+
+        # Declare name for the CSV file for the current partitio
+        file_name = PARTITION + UND + str(partition_id) + DOT + CSV
+        file_path = os.path.join(TILE_DIR, PARTITION, file_name)
+
+        # Barajar los pacientes aleatoriamente
+        random.shuffle(patient_dirs)
+        # Calcular la cantidad de pacientes para entrenamiento y evaluación (70 / 30)
+        num_train = int(len(patient_dirs) * TRAIN_RATIO)
+        num_eval = len(patient_dirs) - num_train
+
+
+
+        with open(file_path, "w", newline="") as csvfile:
+            csv_writer = csv.writer(csvfile)
+            # Escribir encabezados
+            csv_writer.writerow(["id", "set", "patient_id", "tile_id"])
+            # Escribir datos
+            csv_writer.writerows(csv_data)
+
+        print(f"Archivo CSV creado en: {file_path}")
+
+def add_tiles_to_partitions()
