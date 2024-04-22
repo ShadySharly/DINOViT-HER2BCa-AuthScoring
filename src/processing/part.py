@@ -135,4 +135,5 @@ def create_gdc_partitions():
 
         print(f"Archivo CSV creado en: {file_path}")
 
-def add_tiles_to_partitions()
+def add_tiles_to_partitions():
+    return ""

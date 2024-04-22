@@ -29,6 +29,7 @@ from enum import Enum
 import util
 import filter
 import slide
+import metadata as md
 from util import *
 from metadata import *
 
@@ -1765,8 +1766,8 @@ def singleprocess_filtered_images_to_tiles(display, save_summary, save_data, sav
   print("Time to generate tile summaries: %s\n" % str(t.elapsed()))
 
 
-def multiprocess_filtered_images_to_tiles(display=False, save_summary=False, save_data=False, save_top_tiles=True,
-                                          image_num_list=None, start_ind=None):
+def multiprocess_filtered_images_to_tiles(display=False, save_summary=False, summary_dir=None, save_data=False, save_top_tiles=True,
+                                          image_num_list=None, start_ind=None, score_treshold=None, tissue_treshold=None):
   """
   Generate tile summaries and tiles for all training images using multiple processes (one process per core).
 
@@ -1784,11 +1785,21 @@ def multiprocess_filtered_images_to_tiles(display=False, save_summary=False, sav
   if save_summary and not os.path.exists(TILE_SUMMARY_DIR):
     os.makedirs(TILE_SUMMARY_DIR)
 
+  if save_summary and summary_dir is not None:
+    new_dir = os.path.join(TILE_SUMMARY_DIR, summary_dir)
+    os.makedirs(new_dir)
+
   # how many processes to use
   num_processes = CPU_COUNT
   pool = multiprocessing.Pool(num_processes)
 
   image_num = util.get_dir_size(FILTER_IMAGE_DIR)
+
+  if score_treshold is not None:
+    md.SCORE_HIGH_THRESH = score_treshold; 
+
+  if tissue_treshold is not None:
+    md.TISSUE_HIGH_THRESH = tissue_treshold; 
 
   if image_num_list is not None:
     num_train_images = len(image_num_list)
