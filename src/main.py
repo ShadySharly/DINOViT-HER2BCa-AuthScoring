@@ -21,7 +21,7 @@ def main():
     #print(args)
     #Path(args.output_dir).mkdir(parents=True, exist_ok=True)
     #train_dino(args)
-    multiprocess_filtered_images_to_tiles(save_summary=True, save_top_tiles=False)
+    multiprocess_filtered_images_to_tiles(image_num_list=[87], save_summary=True, summary_dir="0087_score09", save_top_tiles=False, score_treshold=0.9)
     
 
 if __name__ == "__main__":

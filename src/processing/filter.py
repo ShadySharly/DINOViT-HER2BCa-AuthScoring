@@ -197,7 +197,7 @@ def filter_canny(np_img, sigma=1, low_threshold=0, high_threshold=25, output_typ
   return can
 
 
-def mask_percent(np_img, is_tile):
+def mask_percent(np_img, is_tile=None):
   """
   Determine the percentage of a NumPy array that is masked (how many of the values are 0 values).
 
@@ -209,8 +209,6 @@ def mask_percent(np_img, is_tile):
   """
   if (len(np_img.shape) == 3) and (np_img.shape[2] == 3):
     np_sum = np_img[:, :, 0] + np_img[:, :, 1] + np_img[:, :, 2]
-    print("NP SUM: " + str(np_sum))
-    print("NP SUM SIZE: " + str(np_sum.size))
     
     if is_tile:
       tile_size = ROW_TILE_SIZE * COL_TILE_SIZE
@@ -259,7 +257,7 @@ def filter_remove_small_objects(np_img, min_size=3000, avoid_overmask=False, ove
   print("print A")
   rem_sm = sk_morphology.remove_small_objects(rem_sm, min_size=min_size)
   print("print A")
-  mask_percentage = mask_percent(rem_sm)
+  mask_percentage = mask_percent(rem_sm, False)
   print("print A")
   if (mask_percentage >= overmask_thresh) and (min_size >= 1) and (avoid_overmask is True):
     print("print A")
@@ -759,7 +757,7 @@ def filter_green_channel(np_img, green_thresh=200, avoid_overmask=False, overmas
 
   g = np_img[:, :, 1]
   gr_ch_mask = (g < green_thresh) & (g > 0)
-  mask_percentage = mask_percent(gr_ch_mask)
+  mask_percentage = mask_percent(gr_ch_mask, False)
   if (mask_percentage >= overmask_thresh) and (green_thresh < 255) and (avoid_overmask is True):
     new_green_thresh = math.ceil((255 - green_thresh) / 2 + green_thresh)
     print(
@@ -1147,7 +1145,7 @@ def save_display(save, display, info, np_img, slide_num, filter_num, display_tex
   """
   mask_percentage = None
   if display_mask_percentage:
-    mask_percentage = mask_percent(np_img)
+    mask_percentage = mask_percent(np_img, False)
     display_text = display_text + "\n(" + mask_percentage_text(mask_percentage) + " masked)"
   if slide_num is None and filter_num is None:
     pass
@@ -1163,6 +1161,7 @@ def save_display(save, display, info, np_img, slide_num, filter_num, display_tex
     save_filtered_image(np_img, slide_num, filter_num, file_text)
   if info is not None:
     info[slide_num * 1000 + filter_num] = (slide_num, filter_num, display_text, file_text, mask_percentage)
+
 
 
 def mask_percentage_text(mask_percentage):
