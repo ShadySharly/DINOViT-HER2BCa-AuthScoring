@@ -7,6 +7,7 @@ JPG = "jpg"
 PNG = "png"
 TXT = "txt"
 CSV = "csv"
+PT = "pt"
 DOT = "."
 UND = "_"
 IMAGE_EXT = JPG
@@ -27,6 +28,7 @@ SRC_DIR = os.path.join(ROOT_DIR, SRC)
 GDC_TCGA = "GDC_TCGA"
 UCH_CPDAI = "UCH_CPDAI"
 CKPT = "ckpt"
+EMBED = "embeddings"
 FILTER = "filter"
 IMAGE = "image"
 IMAGE_MULTI = "image_multi"
@@ -82,7 +84,7 @@ TILE_LABEL_TEXT_SIZE = 10
 LABEL_ALL_TILES_IN_TOP_TILE_SUMMARY = True
 BORDER_ALL_TILES_IN_TOP_TILE_SUMMARY = True
 
-TILE_BORDER_SIZE = 2  # The size of the colored rectangular border around summary tiles.
+TILE_BORDER_SIZE = 10  # The size of the colored rectangular border around summary tiles.
 
 HIGH_COLOR = (0, 255, 0)
 MEDIUM_COLOR = (255, 255, 0)
@@ -152,6 +154,7 @@ TILE_SUMMARY_ON_ORIGINAL_THUMBNAIL_DIR = os.path.join(
     TILE_DIR, "tile_summary_on_original_thumbnail_" + JPG
 )
 TILE_IMAGE_DIR = os.path.join(TILE_DIR, "tiles_" + JPG)
+TILE_IMAGE_TEST_DIR = os.path.join(TILE_DIR, "tiles_test_" + JPG)
 TOP_TILES_DIR = os.path.join(TILE_DIR, TOP_TILES_SUFFIX + "_" + JPG)
 TOP_TILES_THUMBNAIL_DIR = os.path.join(TILE_DIR, TOP_TILES_SUFFIX + "_thumbnail_" + JPG)
 TOP_TILES_ON_ORIGINAL_DIR = os.path.join(

@@ -21,7 +21,7 @@ import uuid
 from pathlib import Path
 
 import main_dino
-import submitit
+import submitit # type: ignore
 
 
 def parse_args():
@@ -67,7 +67,7 @@ class Trainer(object):
 
     def checkpoint(self):
         import os
-        import submitit
+        import submitit # type: ignore
 
         self.args.dist_url = get_init_file().as_uri()
         print("Requeuing ", self.args)
@@ -75,7 +75,7 @@ class Trainer(object):
         return submitit.helpers.DelayedSubmission(empty_trainer)
 
     def _setup_gpu_args(self):
-        import submitit
+        import submitit # type: ignore
         from pathlib import Path
 
         job_env = submitit.JobEnvironment()

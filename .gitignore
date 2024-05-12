@@ -7,3 +7,5 @@
 *.svs
 *.parcel
 *.txt
+*.pth
+*.pt

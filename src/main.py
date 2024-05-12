@@ -1,4 +1,5 @@
 import sys, os
+import torch
 from metadata import *
 
 sys.path.append(os.path.join(sys.path[0], PROCESSING))
@@ -16,13 +17,40 @@ def main():
     #create_tiles_overall()
     #create_tiles_summary()
     
-    #parser = argparse.ArgumentParser('DINO', parents=[get_args_parser()])
-    #args = parser.parse_args()
+    parser = argparse.ArgumentParser('DINO', parents=[get_args_parser()])
+    args = parser.parse_args()
     #print(args)
-    #Path(args.output_dir).mkdir(parents=True, exist_ok=True)
-    #train_dino(args)
-    multiprocess_filtered_images_to_tiles(image_num_list=[87], save_summary=True, summary_dir="0087_score09", save_top_tiles=False, score_treshold=0.9)
-    
+    #Path(args.output_dir).mkdir(parents=True, exist_ok=True)       
+    train_dino(args)
+    '''
+    pt_file = os.path.join(CKPT_DIR, '2024-05-11T02:56:22', EMBED, 'student_epoch_0.pt')
+    tensor = torch.load(pt_file)
+    print(tensor)
+
+    # Suponiendo que tensor es el tensor que proporcionaste
+    # Obtener la forma del tensor (número de embeddings, dimensión de embedding)
+    shape = tensor.shape
+    print("Forma del tensor:", shape)
+
+    # Obtener el tipo de datos del tensor
+    dtype = tensor.dtype
+    print("Tipo de datos del tensor:", dtype)
+
+    # Verificar si el tensor está en la GPU
+    device = tensor.device
+    print("Dispositivo del tensor:", device)
+
+    # Convertir el tensor a un array numpy para facilitar su manipulación y visualización
+    tensor_array = tensor.cpu().detach().numpy()
+    print("Tensor convertido a array numpy:")
+    print(tensor_array)
+
+    # Explorar más detalles sobre el tensor, como mínimo, máximo, media, etc.
+    print("Mínimo valor del tensor:", torch.min(tensor))
+    print("Máximo valor del tensor:", torch.max(tensor))
+    print("Media de los valores del tensor:", torch.mean(tensor))
+    #multiprocess_filtered_images_to_tiles(image_num_list=[87], save_summary=True, save_data=True, save_top_tiles=False)
+    '''
 
 if __name__ == "__main__":
     main()

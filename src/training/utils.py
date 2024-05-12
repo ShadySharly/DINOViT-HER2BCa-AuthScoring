@@ -17,10 +17,12 @@ Misc functions.
 Mostly copy-paste from torchvision references or other public repos like DETR:
 https://github.com/facebookresearch/detr/blob/master/util/misc.py
 """
+from ast import arg
 import os
 import sys
 import time
 import math
+import torch
 import random
 import datetime
 import subprocess
@@ -31,6 +33,8 @@ import torch
 from torch import nn
 import torch.distributed as dist
 from PIL import ImageFilter, ImageOps
+from torchvision import datasets
+from torch.utils.data import Subset
 
 
 class GaussianBlur(object):
@@ -149,12 +153,13 @@ def cancel_gradients_last_layer(epoch, model, freeze_last_layer):
             p.grad = None
 
 
-def restart_from_checkpoint(ckp_path, run_variables=None, **kwargs):
+def restart_from_checkpoint(args, ckp_path, run_variables=None, **kwargs):
     """
     Re-start from checkpoint
     """
     if not os.path.isfile(ckp_path):
         return
+
     print("Found checkpoint at {}".format(ckp_path))
 
     # open checkpoint file
@@ -466,37 +471,56 @@ def setup_for_distributed(is_master):
 
 def init_distributed_mode(args):
     # launched with torch.distributed.launch
-    print("OS ENVIRON " + str(os.environ))
+    available_gpus = torch.cuda.device_count()
+    print("N° GPUs Available: %d" % available_gpus)
+    
     if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
+        print("launched with torch.distributed.launch")
         args.rank = int(os.environ["RANK"])
         args.world_size = int(os.environ['WORLD_SIZE'])
         args.gpu = int(os.environ['LOCAL_RANK'])
     # launched with submitit on a slurm cluster
     elif 'SLURM_PROCID' in os.environ:
+        print("launched with submitit on a slurm cluster")
         args.rank = int(os.environ['SLURM_PROCID'])
         args.gpu = args.rank % torch.cuda.device_count()
     # launched naively with `python main_dino.py`
     # we manually add MASTER_ADDR and MASTER_PORT to env variables
     elif torch.cuda.is_available():
-        print('Will run the code on one GPU.')
-        args.rank, args.gpu, args.world_size = 0, 0, 1
+        print("launched naively with `python main_dino.py`")
+
+        args.gpu = args.rank % available_gpus
         os.environ['MASTER_ADDR'] = '127.0.0.1'
         os.environ['MASTER_PORT'] = '29500'
+
+        print("rank: %d" % args.rank)
+        print("world_size: %d" % args.world_size)
+        print("gpu: %d" % args.gpu)
     else:
         print('Does not support training without GPU.')
         sys.exit(1)
 
-    dist.init_process_group(
-        backend="nccl",
-        init_method=args.dist_url,
-        world_size=args.world_size,
-        rank=args.rank,
-    )
+    print('Init Process Group\n')
+    try:
+        dist.init_process_group(
+            backend="nccl",
+            init_method=args.dist_url,
+            world_size=args.world_size,
+            rank=args.rank
+        )
+    except Exception as e:
+        print("Error initializing distributed process group:", e)
+        sys.exit(1)
+    print('End Process Group\n')
 
     torch.cuda.set_device(args.gpu)
     print('| distributed init (rank {}): {}'.format(
         args.rank, args.dist_url), flush=True)
-    dist.barrier()
+
+    print('Dist Barrier Start\n')
+    dist.barrier(device_ids=[args.gpu])
+    print('Dist Barrier Ends\n')
+
     setup_for_distributed(args.rank == 0)
 
 
@@ -828,3 +852,20 @@ def multi_scale(samples, model):
     v /= 3
     v /= v.norm()
     return v
+
+def get_filtered_dataset(root_dir, classes_list):
+
+    # Create ImageFolder dataset with selected classes
+    dataset = datasets.ImageFolder(root=root_dir)
+
+    # Now, we create a new dataset with only the selected classes
+    selected_indices = []
+    for idx, (image_path, class_idx) in enumerate(dataset.samples):
+        class_name = dataset.classes[class_idx]
+        if class_name in classes_list:
+            selected_indices.append(idx)
+
+    # Create a subset of the original dataset with selected indices
+    selected_dataset = Subset(dataset, selected_indices) # type: ignore
+
+    return selected_dataset

@@ -1478,6 +1478,8 @@ def summary_stats(tile_summary):
   Returns:
      Various stats about the slide tiles as a string.
   """
+  print("Min Score %f\n" % MIN_SCORE_THRESH);
+  print("Min Tissue %d%%\n" % MIN_TISSUE_THRESH);
   return "Original Dimensions: %dx%d\n" % (tile_summary.orig_w, tile_summary.orig_h) + \
          "Original Tile Size: %dx%d\n" % (tile_summary.orig_tile_w, tile_summary.orig_tile_h) + \
          "Scale Factor: 1/%dx\n" % tile_summary.scale_factor + \
@@ -1493,11 +1495,11 @@ def summary_stats(tile_summary):
            TISSUE_HIGH_THRESH) + \
          " %5d (%5.2f%%) tiles >0%% and <%d%% tissue\n" % (
            tile_summary.low, tile_summary.low / tile_summary.count * 100, TISSUE_LOW_THRESH) + \
-         " %5d (%5.2f%%) tiles =0%% tissue" % (tile_summary.none, tile_summary.none / tile_summary.count * 100) + \
+         " %5d (%5.2f%%) tiles =0%% tissue\n" % (tile_summary.none, tile_summary.none / tile_summary.count * 100) + \
          " Total Tiles generated: %d\n" % tile_summary.count + \
-         " Top Tiles filtered: %d\n" % tile_summary.top_tiles().count + \
-         " Score Threshold: %f\n" % SCORE_HIGH_THRESH + \
-         " Tissue Treshold: %d%%\n" % TISSUE_HIGH_THRESH
+         " Top Tiles filtered: %d\n" % len(tile_summary.top_tiles()) + \
+         " Score Threshold: %f\n" % MIN_SCORE_THRESH + \
+         " Tissue Treshold: %d%%\n" % MIN_TISSUE_THRESH
 
 def generate_tile_summaries(tile_sum, np_img, display, save_summary):
   """
@@ -1802,11 +1804,16 @@ def multiprocess_filtered_images_to_tiles(display=False, save_summary=False, sum
   image_num = util.get_dir_size(FILTER_IMAGE_DIR)
 
   if score_treshold is not None:
-    md.SCORE_HIGH_THRESH = score_treshold; 
-    md.MIN_SCORE_THRESH = score_treshold;
+    global SCORE_HIGH_THRESH, MIN_SCORE_THRESH;
+    SCORE_HIGH_THRESH = score_treshold; 
+    MIN_SCORE_THRESH = score_treshold;
 
   if tissue_treshold is not None:
-    md.TISSUE_HIGH_THRESH = tissue_treshold; 
+    global TISSUE_HIGH_THRESH, MIN_TISSUE_THRESH
+    TISSUE_HIGH_THRESH = tissue_treshold; 
+    MIN_TISSUE_THRESH = tissue_treshold;
+  
+  print("Min Score %f\n" % MIN_SCORE_THRESH);
 
   if image_num_list is not None:
     num_train_images = len(image_num_list)
@@ -1873,3 +1880,110 @@ def multiprocess_filtered_images_to_tiles(display=False, save_summary=False, sum
     print("Done tiling slides: %s" % image_nums)
 
   print("Time to generate tile previews (multiprocess): %s\n" % str(timer.elapsed()))
+
+  def multiprocess_local_images_to_tiles(display=False, save_summary=False, summary_dir=None, save_data=False, save_top_tiles=True,
+                                          image_num_list=None, start_ind=None, score_treshold=None, tissue_treshold=None):
+    """
+    Generate tile summaries and tiles for all training images using multiple processes (one process per core).
+
+    Args:
+      display: If True, display images to screen (multiprocessed display not recommended).
+      save_summary: If True, save tile summary images.
+      save_data: If True, save tile data to csv file.
+      save_top_tiles: If True, save top tiles to files.
+      html: If True, generate HTML page to display tiled images.
+      image_num_list: Optionally specify a list of image slide numbers.
+    """
+    timer = Time()
+    print("Generating tile summaries (multiprocess)\n")
+
+    if save_summary and not os.path.exists(TILE_SUMMARY_DIR):
+      os.makedirs(TILE_SUMMARY_DIR)
+
+    if save_summary and summary_dir is not None:
+      new_dir = os.path.join(TILE_SUMMARY_DIR, summary_dir)
+      os.makedirs(new_dir)
+
+    # how many processes to use
+    num_processes = CPU_COUNT
+    pool = multiprocessing.Pool(num_processes)
+
+    image_num = util.get_dir_size(FILTER_IMAGE_DIR)
+
+    if score_treshold is not None:
+      global SCORE_HIGH_THRESH, MIN_SCORE_THRESH;
+      SCORE_HIGH_THRESH = score_treshold; 
+      MIN_SCORE_THRESH = score_treshold;
+
+    if tissue_treshold is not None:
+      global TISSUE_HIGH_THRESH, MIN_TISSUE_THRESH
+      TISSUE_HIGH_THRESH = tissue_treshold; 
+      MIN_TISSUE_THRESH = tissue_treshold;
+    
+    print("Min Score %f\n" % MIN_SCORE_THRESH);
+
+    if image_num_list is not None:
+      num_train_images = len(image_num_list)
+
+    elif start_ind is None:
+      start_ind = 0
+      num_train_images = image_num
+
+    else:
+      end_ind = start_ind + IMAGE_BATCH
+    
+      if end_ind > image_num:
+        rest = end_ind % image_num
+        num_train_images = IMAGE_BATCH - rest
+
+      else:
+        num_train_images = IMAGE_BATCH
+
+    if num_processes > num_train_images:
+      num_processes = num_train_images
+      
+    images_per_process = num_train_images / num_processes
+                                            
+    print("Number of processes: " + str(num_processes))
+    print("Number of training images: " + str(num_train_images))
+
+    tasks = []
+    for num_process in range(1, num_processes + 1):
+      start_index = (num_process - 1) * images_per_process
+      end_index = num_process * images_per_process
+      start_index = int(start_index)
+      end_index = int(end_index)
+      print("N° Process %d" % num_process)
+      print("Start Index %d" % start_index)
+      print("End Index %d\n" % end_index)
+      
+      if image_num_list is not None:
+        sublist = image_num_list[start_index: end_index]
+        tasks.append((sublist, display, save_summary, save_data, save_top_tiles))
+        print("Task #" + str(num_process) + ": Process slides " + str(sublist))
+      else:
+        tasks.append((start_index, end_index, display, save_summary, save_data, save_top_tiles))
+        if start_index == end_index:
+          print("Task #" + str(num_process) + ": Process slide " + str(start_index))
+        else:
+          print("Task #" + str(num_process) + ": Process slides " + str(start_index) + " to " + str(end_index))
+
+    # start tasks
+    results = []
+    
+    for t in tasks:
+      if image_num_list is not None:
+        results.append(pool.apply_async(image_list_to_tiles, t))
+      else:
+        results.append(pool.apply_async(image_range_to_tiles, t))
+
+    slide_nums = list()
+    tile_summaries_dict = dict()
+    
+    for result in results:
+      image_nums, tile_summaries = result.get()
+      slide_nums.extend(image_nums)
+      tile_summaries_dict.update(tile_summaries)
+      print("Done tiling slides: %s" % image_nums)
+
+    print("Time to generate tile previews (multiprocess): %s\n" % str(timer.elapsed()))

@@ -40,7 +40,9 @@ class DropPath(nn.Module):
     """
     def __init__(self, drop_prob=None):
         super(DropPath, self).__init__()
-        self.drop_prob = drop_prob
+
+        if (drop_prob is not None):
+            self.drop_prob = drop_prob
 
     def forward(self, x):
         return drop_path(x, self.drop_prob, self.training)
@@ -143,8 +145,8 @@ class VisionTransformer(nn.Module):
             img_size=img_size[0], patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
         num_patches = self.patch_embed.num_patches
 
-        self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
-        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim)) # type: ignore
+        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim)) # type: ignore
         self.pos_drop = nn.Dropout(p=drop_rate)
 
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
@@ -236,21 +238,21 @@ class VisionTransformer(nn.Module):
 def vit_tiny(patch_size=16, **kwargs):
     model = VisionTransformer(
         patch_size=patch_size, embed_dim=192, depth=12, num_heads=3, mlp_ratio=4,
-        qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
+        qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs) # type: ignore
     return model
 
 
 def vit_small(patch_size=16, **kwargs):
     model = VisionTransformer(
         patch_size=patch_size, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4,
-        qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
+        qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs) # type: ignore
     return model
 
 
 def vit_base(patch_size=16, **kwargs):
     model = VisionTransformer(
         patch_size=patch_size, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4,
-        qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
+        qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs) # type: ignore
     return model
 
 
@@ -263,20 +265,20 @@ class DINOHead(nn.Module):
         else:
             layers = [nn.Linear(in_dim, hidden_dim)]
             if use_bn:
-                layers.append(nn.BatchNorm1d(hidden_dim))
-            layers.append(nn.GELU())
+                layers.append(nn.BatchNorm1d(hidden_dim)) # type: ignore
+            layers.append(nn.GELU()) # type: ignore
             for _ in range(nlayers - 2):
                 layers.append(nn.Linear(hidden_dim, hidden_dim))
                 if use_bn:
-                    layers.append(nn.BatchNorm1d(hidden_dim))
-                layers.append(nn.GELU())
+                    layers.append(nn.BatchNorm1d(hidden_dim)) # type: ignore
+                layers.append(nn.GELU()) # type: ignore
             layers.append(nn.Linear(hidden_dim, bottleneck_dim))
             self.mlp = nn.Sequential(*layers)
         self.apply(self._init_weights)
-        self.last_layer = nn.utils.weight_norm(nn.Linear(bottleneck_dim, out_dim, bias=False))
-        self.last_layer.weight_g.data.fill_(1)
+        self.last_layer = nn.utils.weight_norm(nn.Linear(bottleneck_dim, out_dim, bias=False)) # type: ignore
+        self.last_layer.weight_g.data.fill_(1) # type: ignore
         if norm_last_layer:
-            self.last_layer.weight_g.requires_grad = False
+            self.last_layer.weight_g.requires_grad = False # type: ignore
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
