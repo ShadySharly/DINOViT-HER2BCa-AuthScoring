@@ -37,6 +37,7 @@ THUMBNAIL = "thumbnail"
 TILE = "tile"
 PROCESSING = "processing"
 TRAINING = "training"
+PRETRAIN = "1-Hierarchical-Pretraining"
 CKPT_DIR = os.path.join(DATA_DIR, CKPT)
 GDC_TCGA_DIR = os.path.join(DATA_DIR, GDC_TCGA)
 UCH_CPDAI_DIR = os.path.join(DATA_DIR, UCH_CPDAI)

@@ -1,10 +1,10 @@
 import sys, os
-import torch
 from metadata import *
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2"
 
+sys.path.append(os.path.join(sys.path[0], PRETRAIN))
 sys.path.append(os.path.join(sys.path[0], PROCESSING))
-sys.path.append(os.path.join(sys.path[0], TRAINING))
-
+'''
 from tiles import *
 from filter import *
 from slide import *
@@ -22,7 +22,7 @@ def main():
     #print(args)
     #Path(args.output_dir).mkdir(parents=True, exist_ok=True)       
     train_dino(args)
-    '''
+    
     pt_file = os.path.join(CKPT_DIR, '2024-05-11T02:56:22', EMBED, 'student_epoch_0.pt')
     tensor = torch.load(pt_file)
     print(tensor)
@@ -50,7 +50,8 @@ def main():
     print("Máximo valor del tensor:", torch.max(tensor))
     print("Media de los valores del tensor:", torch.mean(tensor))
     #multiprocess_filtered_images_to_tiles(image_num_list=[87], save_summary=True, save_data=True, save_top_tiles=False)
-    '''
+    
 
 if __name__ == "__main__":
     main()
+'''
