@@ -4,14 +4,13 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2"
 
 sys.path.append(os.path.join(sys.path[0], PRETRAIN))
 sys.path.append(os.path.join(sys.path[0], PROCESSING))
-'''
+
 from tiles import *
 from filter import *
 from slide import *
 from util import *
 from part import *
 from main_dino import *
-
 
 def main():
     #create_tiles_overall()
@@ -54,4 +53,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-'''

@@ -25,12 +25,13 @@ import math
 import random
 import datetime
 import subprocess
+import warnings
 import pandas as pd
 from collections import defaultdict, deque
 
 import numpy as np
 import torch
-from torch import nn
+from torch import Tensor, nn
 import torch.distributed as dist
 from PIL import ImageFilter, ImageOps
 from metadata import *
@@ -732,8 +733,8 @@ class PCA():
         # input is from torch and is on GPU
         if x.is_cuda:
             if self.mean is not None:
-                x -= torch.cuda.FloatTensor(self.mean)
-            return torch.mm(torch.cuda.FloatTensor(self.dvt), x.transpose(0, 1)).transpose(0, 1)
+                x -= torch.cuda.FloatTensor(self.mean) # type: ignore
+            return torch.mm(torch.cuda.FloatTensor(self.dvt), x.transpose(0, 1)).transpose(0, 1) # type: ignore
 
         # input if from torch, on CPU
         if self.mean is not None:
@@ -860,6 +861,6 @@ def multi_scale(samples, model):
             v = feats
         else:
             v += feats
-    v /= 3
+    v /= 3 # type: ignore
     v /= v.norm()
     return v
