@@ -13,16 +13,13 @@ from part import *
 from main_dino import *
 
 def main():
-    #create_tiles_overall()
-    #create_tiles_summary()
-    
+    '''
     parser = argparse.ArgumentParser('DINO', parents=[get_args_parser()])
-    args = parser.parse_args()
-    #print(args)
-    #Path(args.output_dir).mkdir(parents=True, exist_ok=True)       
+    args = parser.parse_args()   
     train_dino(args)
-    
-    pt_file = os.path.join(CKPT_DIR, '2024-05-11T02:56:22', EMBED, 'student_epoch_0.pt')
+    '''
+    #pt_file = os.path.join(CKPT_DIR, '2024-05-18T01:34:46', EMBED, 'student_epoch_0.pt')
+    pt_file = os.path.join(CKPT_DIR, '2024-05-18T01:34:46', 'checkpoint.pth')
     tensor = torch.load(pt_file)
     print(tensor)
 
